@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Remedies - GreenPill{% endblock %}
+
+{% block content %}
+      <!-- remedies -->
+      <div class="about">
+         <div class="container_width">
+            <div class="row d_flex grig">
+               <div class="col-md-6">
+                  <div class="about_img">
+                     <figure><img src="static/images/skincare.jpg" alt="#"/>
+                     </figure>
+                  </div>
+               </div>
+               <div class="col-md-6 order">
+                  <div class="titlepage text_align_left">
+                     <h2>Remedies and Herbs List</h2>
+                  </div>
+               </div>
+            </div>
+            <div class="row"><table>
+               <thead>
+                  <tr>
+                     <th>Name</th>
+                     <th>Description</th>
+                     <th>Origin</th>
+                     <th>Medicinal Uses</th>
+                     <th>Systems Used</th>
+                  </tr>
+               </thead>
+            <tbody>
+               {% for remedy in herbs %}
+                  <tr>
+                     <td>{{ remedy.name }}</td>
+                     <td>{{ remedy.description }}</td>
+                     <td>{{ remedy.origin }}</td>
+                     <td>{{ remedy.medicinal_uses }}</td>
+                     <td>{{ remedy.systems_used }}</td>
+                  </tr>
+               {% endfor %}
+            </tbody>
+         </table>
+        </div>
+     </div>
+   </div>
+      <!-- end remedies -->
+{% endblock %}

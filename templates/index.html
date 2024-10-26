@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Home - GreenPill{% endblock %}
+
+{% block content %}
+         <div class="slider_main">
+                     <div class="container">
+                           <div class="row d_flex">
+                              <div class="col-md-5">
+                                 <div class="creative">
+                                    <h1>Chat With<br>AI Sina</h1>
+                                    <p></p>
+                                    {% if 'user_id' in session %}
+                                    <div id="chat-container" class="chat-container">
+                                       <div class="chat-messages" id="chat-messages">
+                                          <!-- Initial greeting message -->
+                                          <div class="message assistant-message">
+                                          Hello, my name is Sina, how can I assist you today?
+                                          </div>
+                                             <div class="typing-indicator" id="typing-indicator">
+                                             <div class="dot"></div>
+                                             <div class="dot"></div>
+                                             <div class="dot"></div>
+                                          </div>
+                                       </div>
+                                       <div class="input-container">
+                                          <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+                                          <button id="send-button">Send</button>
+                                       </div>
+                                    </div>
+                                    {% else %}
+                                          <p>Please log in to access the AI assistant.</p>
+                                    {% endif %}
+                                 </div>
+                              </div>
+                              </div>
+                           </div>
+                     </div>
+      <!-- end banner -->
+      <!-- about -->
+<div class="about">
+   <div class="container_width">
+      <div class="row d_flex grig">
+         <div class="col-md-6">
+            <div class="about_img">
+               <figure><img src="static/images/about_img.jpg" alt="#"/></figure>
+            </div>
+         </div>
+         <div class="col-md-6 order">
+            <div class="titlepage text_align_left">
+               <h2>About Our App</h2>
+               <p>
+               Welcome to GreenPill, your personal assistant Sina, designed to guide you in exploring natural remedies customized to your age, gender, medical conditions, and allergies.
+                  Our app provides a gateway to discovering herbal treatments for common health concerns, drawing from the rich wisdom of Chinese, Ayurvedic, and Unani medicine traditions.
+                  Whether you’re seeking relief from headaches, digestive issues, or sleep disturbances, GreenPill offers personalized suggestions that cater specifically to your unique needs.
+                  <br><br>
+               Powered by cutting-edge AI technology, GreenPill uses OpenAI’s advanced language model to deliver comprehensive insights and recommendations on natural remedies.
+                  This integration allows us to tap into a vast repository of global medicinal knowledge, combining traditional practices with modern understanding for well-rounded and informed suggestions.
+               </p>
+               <a class="read_more" href="about.html">Read More</a>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+<!-- end about -->
+      <!-- services -->
+      <div class="services">
+         <div class="container">
+            <div class="row">
+               <div class="col-md-12">
+                  <div class="titlepage text_align_center ">
+                     <h2>Our advised based:</h2>
+                  </div>
+               </div>
+               <div class="col-md-4">
+                  <div id="ho_shad" class="services_box text_align_left">
+                     <h3>Ayurveda</h3>
+                     <figure><img src="static/images/service1.jpg" alt="#"/></figure>
+                     <p>Herbs like ashwagandha, turmeric, tulsi, and triphala are central. In Ayurveda, herbs are categorized based on doshas (Vata, Pitta, Kapha) and their effects on the body.</p>
+                     <a class="read_more" href="https://en.wikipedia.org/wiki/Ayurveda">Read More</a>
+                  </div>
+               </div>
+               <div class="col-md-4">
+                  <div id="ho_shad" class="services_box text_align_left">
+                     <h3>Chinese Medicine (TCM)</h3>
+                     <figure><img src="static/images/service2.jpg" alt="#"/></figure>
+                     <p>Common herbs like ginseng, astragalus, licorice root, and peony can be included. These herbs are categorized by their energetic properties (cooling, warming, etc.) and therapeutic functions (tonifying Qi, clearing heat, etc.).</p>
+                     <a class="read_more" href="https://en.wikipedia.org/wiki/Traditional_Chinese_medicine">Read More</a>
+                  </div>
+               </div>
+               <div class="col-md-4">
+                  <div id="ho_shad" class="services_box text_align_left">
+                     <h3>Unani</h3>
+                     <figure><img src="static/images/Unani.jpg" alt="#"/></figure>
+                     <p>Important herbs include black seed (Nigella sativa), fenugreek, and saffron. Unani medicine looks at the balance of humors (blood, phlegm, yellow bile, black bile).</p>
+                     <a class="read_more" href="https://en.wikipedia.org/wiki/Unani_medicine">Read More</a>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- end services -->
+      <!-- Important Information Before You Start -->
+<div class="priceing">
+   <div class="container">
+      <div class="row">
+         <div class="col-md-12">
+            <div class="titlepage text_align_center">
+               <h2>Before You Begin</h2>
+               <p>
+                  Welcome to the GreenPill app! While we strive to provide helpful information and natural remedies based on your inputs, it is essential to understand that the advice provided by this app is not a substitute for professional medical advice. Always consult your healthcare provider before trying any new remedy, especially if you have existing health conditions or are on medication.
+                  <br><br>
+                  GreenPill is not responsible for any risks or adverse effects associated with the use of remedies suggested by the app. Please ensure you input your allergies and medical conditions upon registration to receive the most accurate suggestions.
+                  <br><br>
+                  Keep in mind that AI recommendations can sometimes be inaccurate, so always double-check the information provided and do your research before taking action.
+               </p>
+            </div>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col-md-10 offset-md-1">
+            <div class="row">
+               <!-- Allergies Section -->
+               <div class="col-md-6">
+                  <div class="our_priceing text_align_center">
+                     <div class="our_pri">
+                        <h3>Allergies</h3>
+                        <span>Why they matter</span>
+                        <p>
+                           Allergies play a crucial role in determining the remedies suggested by this app. Some herbs may cause allergic reactions, so it’s important to list any known allergies when using the app. Doing so ensures that the remedies recommended are safe for you to try.
+                        </p>
+                     </div>
+                  </div>
+               </div>
+               <!-- Medical Conditions Section -->
+               <div class="col-md-6">
+                  <div class="our_priceing text_align_center">
+                     <div class="our_pri">
+                        <h3>Health Conditions</h3>
+                        <span>Impact on remedy suggestions</span>
+                        <p>
+                           Certain medical conditions or medications can affect the suitability of natural remedies. It’s important to provide details of your health conditions when using the app, so we can tailor suggestions accordingly. Always check with your healthcare provider if you’re unsure.
+                        </p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+      <!-- end priceing -->
+      <!-- blog -->
+      <div class="blog">
+   <div class="container">
+      <div class="row">
+         <div class="col-md-12">
+            <div class="titlepage text_align_center">
+               <h2>Free Resources and Media</h2>
+               <p>Explore a curated selection of blogs, books, and courses to deepen your understanding of herbal medicine.</p>
+            </div>
+         </div>
+      </div>
+      <div class="row d_flex">
+         <!-- Herbal Blogs Section -->
+         <div class="col-md-4">
+            <div class="latest">
+               <figure><img src="static/images/plants-flat-lay.jpg" alt="Herbal Blogs"/></figure>
+               <div class="nostrud">
+                  <h3>Herbal Blogs</h3>
+                  <p>Discover inspiring articles and insights from leading herbalists around the world.</p>
+                  </div>
+            </div>
+         </div>
+         <!-- Free Books Section -->
+         <div class="col-md-4">
+            <div class="latest">
+               <figure><img src="static/images/books.jpg" alt="Free Herbal Books"/></figure>
+               <div class="nostrud">
+                  <h3>Free Books</h3>
+                  <p>Access a collection of free eBooks to enhance your herbal knowledge.</p>
+                  </div>
+            </div>
+         </div>
+         <!-- Free Herbal Courses Section -->
+         <div class="col-md-4">
+            <div class="latest">
+               <figure><img src="static/images/cosmetic.jpg" alt="Free Herbal Courses"/></figure>
+               <div class="nostrud">
+                  <h3>Free Herbal Courses</h3>
+                  <p>Start your journey into herbalism with these free online courses.</p>
+                  </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+      <!-- end blog -->
+       {% endblock %}

@@ -1,0 +1,136 @@
+{
+    "remedies": [
+        {
+            "name": "Chamomile",
+            "description": "A herb used for its calming effects.",
+            "origin": "Europe, Asia",
+            "medicinal_uses": "Used to treat anxiety and promote sleep.",
+            "systems_used": "Nervous system, Digestive system"
+        },
+        {
+            "name": "Echinacea",
+            "description": "A popular herb known for its immune-boosting properties.",
+            "origin": "North America",
+            "medicinal_uses": "Commonly used to prevent colds and flu.",
+            "systems_used": "Immune system"
+        },
+        {
+            "name": "Ginger",
+            "description": "A spice with anti-inflammatory properties.",
+            "origin": "Southeast Asia",
+            "medicinal_uses": "Nausea, digestion",
+            "systems_used_in": "Ayurvedic, Traditional Chinese"
+        },
+        {
+            "name": "Turmeric",
+            "description": "Turmeric is known for its anti-inflammatory properties.",
+            "origin": "India",
+            "medicinal_uses": "Inflammation, pain relief",
+            "systems_used_in": "Ayurvedic"
+        },
+        {
+            "name": "Peppermint",
+            "description": "A common herb used for digestive problems.",
+            "origin": "Mediterranean",
+            "medicinal_uses": "Relieves gas, bloating, and indigestion.",
+            "systems_used": "Digestive system"
+        },
+        {
+            "name": "Lavender",
+            "description": "Known for its soothing fragrance and ability to reduce stress.",
+            "origin": "Mediterranean",
+            "medicinal_uses": "Anxiety, stress relief, and sleep aid.",
+            "systems_used": "Nervous system"
+        },
+        {
+            "name": "Aloe Vera",
+            "description": "A succulent plant known for its healing properties.",
+            "origin": "North Africa",
+            "medicinal_uses": "Used for skin healing, burns, and digestive issues.",
+            "systems_used": "Integumentary system, Digestive system"
+        },
+        {
+            "name": "Ginseng",
+            "description": "A herb believed to improve energy levels and immune function.",
+            "origin": "Korea, China",
+            "medicinal_uses": "Boosts energy, reduces stress.",
+            "systems_used": "Endocrine system, Immune system"
+        },
+        {
+            "name": "St. John's Wort",
+            "description": "Commonly used for mood disorders.",
+            "origin": "Europe",
+            "medicinal_uses": "Depression, mood swings.",
+            "systems_used": "Nervous system"
+        },
+        {
+            "name": "Garlic",
+            "description": "A bulbous plant known for its antibacterial and antiviral properties.",
+            "origin": "Central Asia",
+            "medicinal_uses": "Blood pressure, cardiovascular health.",
+            "systems_used": "Circulatory system"
+        }
+    ],
+    "complaints": [
+        {
+            "description": "Persistent headache.",
+            "severity": "High",
+            "duration": "2 days",
+            "remedy": "Lavender"
+        },
+        {
+            "description": "Difficulty sleeping.",
+            "severity": "Medium",
+            "duration": "1 week",
+            "remedy": "Chamomile"
+        },
+        {
+            "description": "Frequent stomach pain.",
+            "severity": "Low",
+            "duration": "1 month",
+            "remedy": "Peppermint"
+        },
+        {
+            "description": "Chronic joint pain.",
+            "severity": "High",
+            "duration": "3 months",
+            "remedy": "Turmeric"
+        },
+        {
+            "description": "Cold symptoms: runny nose and sore throat.",
+            "severity": "Low",
+            "duration": "5 days",
+            "remedy": "Echinacea"
+        },
+        {
+            "description": "Skin rash with itching.",
+            "severity": "Medium",
+            "duration": "2 weeks",
+            "remedy": "Aloe Vera"
+        },
+        {
+            "description": "Back pain.",
+            "severity": "High",
+            "duration": "1 week",
+            "remedy": "Ginger"
+        },
+        {
+            "description": "Persistent cough.",
+            "severity": "Low",
+            "duration": "10 days",
+            "remedy": "Garlic"
+        },
+        {
+            "description": "Mild fever.",
+            "severity": "Medium",
+            "duration": "3 days",
+            "remedy": "Ginseng"
+        },
+        {
+            "description": "Menstrual cramps.",
+            "severity": "High",
+            "duration": "2 days",
+            "remedy": "St. John's Wort"
+        }
+    ]
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <!-- basic meta tags -->
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <!-- site metas -->
+      <title>{% block title %}GreenPill{% endblock %}</title>
+      <meta name="keywords" content="">
+      <meta name="description" content="">
+      <meta name="author" content="">
+      <!-- CSS files -->
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+      <link rel="icon" href="{{ url_for('static', filename='images/fevicon.png') }}" type="image/gif" />
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/owl.carousel.min.css') }}">
+      <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-datepicker.min.css') }}">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+   </head>
+   <body class="main-layout">
+      <!-- loader  -->
+      <div class="loader_bg">
+         <div class="loader"><img src="{{ url_for('static', filename='images/loading.gif') }}" alt="#"/></div>
+      </div>
+      <!-- end loader -->
+      <div class="full_bg">
+         <!-- header -->
+         <header class="header-area">
+            <div class="container">
+               <div class="row d_flex">
+                  <div class="col-md-3 col-sm-3">
+                     <div class="logo">
+                        <a href="{{ url_for('home') }}">GreenPill</a><img src="{{ url_for('static', filename='images/logo.png') }}" alt="#"/>
+                     </div>
+                  </div>
+                  <div class="col-md-9 col-sm-9">
+                     <div class="navbar-area">
+                        <nav class="site-navbar">
+                           <ul>
+                              <li><a class="active" href="{{ url_for('home') }}">Home</a></li>
+                              <li><a href="{{ url_for('issues') }}">Issues List</a></li>
+                              <li><a href="{{ url_for('remedies') }}">Herbs List</a></li>
+                              <li><a href="{{ url_for('resources') }}">Free Resources</a></li>
+                              <li><a href="{{ url_for('contact') }}">Contact Us</a></li>
+                              <li class="d_none"><a href="{{ url_for('login') }}"><i class="fa fa-user" aria-hidden="true"></i></a></li>
+                              <li class="d_none"><a href="{{ url_for('register') }}"><i class="fa fa-sign-in" aria-hidden="true"></i></a></li>
+                           </ul>
+                           <button class="nav-toggler">
+                              <span></span>
+                           </button>
+                        </nav>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </header>
+         <!-- end header -->
+         {% block content %}
+         <!-- Page-specific content goes here -->
+         {% endblock %}
+      </div>
+      <!-- Footer -->
+      <footer>
+         <div class="footer">
+            <div class="container">
+               <div class="row">
+                  <div class="col-md-7">
+                     <div class="row">
+                        <div class="col-lg-6 col-md-12">
+                           <div class="hedingh3 text_align_left">
+                              <h3>About</h3>
+                              <p>GreenPill is your AI-powered herbal assistant providing costumed natural remedies.</p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="col-md-5">
+                     <div class="row">
+                        <div class="col-lg-6 col-md-12">
+                           <div class="hedingh3 text_align_left">
+                              <h3>Menu</h3>
+                              <ul class="menu_footer">
+                                 <li><a href="{{ url_for('home') }}">Home</a></li>
+                                 <li><a href="{{ url_for('issues') }}">Issues List</a></li>
+                                 <li><a href="{{ url_for('remedies') }}">Herbs List</a></li>
+                                 <li><a href="{{ url_for('resources') }}">Free Resources</a></li>
+                                 <li><a href="{{ url_for('contact') }}">Contact Us</a></li>
+                              </ul>
+                           </div>
+                        </div>
+                        <div class="col-lg-6 col-md-12">
+                           <div class="hedingh3 text_align_left">
+                              <h3>Newsletter</h3>
+                              <form id="colof" class="form_subscri">
+                                 <input class="newsl" placeholder="Email" type="text" name="Email">
+                                 <button class="subsci_btn">Subscribe</button>
+                              </form>
+                              <ul class="top_infomation">
+                                 <li><i class="fa fa-phone" aria-hidden="true"></i> +01 1234567890</li>
+                                 <li><i class="fa fa-envelope" aria-hidden="true"></i> <a href="mailto:demo@gmail.com">demo@gmail.com</a></li>
+                              </ul>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+            <div class="copyright">
+               <p>© 2024 All Rights Reserved.GreenPill</p>
+            </div>
+         </div>
+      </footer>
+      <!-- Javascript files-->
+      <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/custom.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>
+   </body>
+</html>

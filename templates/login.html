@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Login - GreenPill{% endblock %}
+
+{% block content %}
+ <!-- login -->
+      <div class="services">
+         <div class="container">
+            <div class="row">
+               <div class="col-md-12">
+                  <div class="titlepage text_align_center ">
+                     <h2>Login</h2>
+                  </div>
+               </div>
+            </div>
+            <div class="row">
+               <div class="col-md-4">
+                  <div id="ho_shad" class="services_box text_align_left">
+                      <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                            <div>{{ form.email.label }} {{ form.email() }}</div>
+                            <div>{{ form.password.label }} {{ form.password() }}</div>
+                            <div>{{ form.submit() }}</div>
+                      </form>
+                  </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end login -->
+{% endblock %}

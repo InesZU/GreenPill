@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Contact - GreenPill{% endblock %}
+
+{% block content %}
+<!-- Add Your Remedy -->
+<div class="appointment">
+   <div class="container">
+      <div class="row">
+         <div class="col-md-12">
+            <div class="titlepage text_align_center">
+               <h2>Share Your Remedy</h2>
+               <p>Have an effective natural remedy to share? Submit it here and help others discover new ways to improve their well-being.</p>
+            </div>
+         </div>
+         <div class="col-md-12">
+            <form id="add_remedy_form" class="main_form" action="/submit_remedy" method="POST">
+               <div class="row">
+                  <!-- Name Input -->
+                  <div class="col-md-6">
+                     <input class="form_control" placeholder="Your Name" type="text" name="name" required>
+                  </div>
+                  <!-- Remedy Details -->
+                  <div class="col-md-12">
+                     <textarea class="textarea form_control" placeholder="Describe your remedy (e.g., ingredients, instructions, and benefits)" name="remedy_details" rows="5" required></textarea>
+                  </div>
+                  <!-- Submit Button -->
+                  <div class="col-md-12 text_align_center">
+                     <button class="send_btn" type="submit">Submit Remedy</button><br><br>
+                  </div>
+               </div>
+            </form>
+         </div>
+         <div class="col-md-12">
+            <div class="titlepage text_align_center">
+               <h2>Contact Us</h2>
+               <p>Have a question, concern, or feedback? We’re here to help! Reach out to us, and we’ll get back to you as soon as possible.</p>
+            </div>
+         </div>
+         <div class="col-md-12">
+            <form id="request" class="main_form" action="/submit_contact" method="POST">
+               <div class="row">
+                  <!-- Name Input -->
+                  <div class="col-md-6">
+                     <input class="form_control" placeholder="Your Name" type="text" name="name" required>
+                  </div>
+                  <!-- Email Input -->
+                  <div class="col-md-6">
+                     <input class="form_control" placeholder="Your Email" type="email" name="email" required>
+                  </div>
+                  <!-- Message Input -->
+                  <div class="col-md-12">
+                     <textarea class="textarea form_control" placeholder="Your Message" name="message" rows="5" required></textarea>
+                  </div>
+                  <!-- Submit Button -->
+                  <div class="col-md-12 text_align_center">
+                     <button class="send_btn" type="submit">Send Message</button>
+                  </div>
+               </div>
+            </form>
+         </div>
+      </div>
+   </div>
+</div>
+      {% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Issues - GreenPill{% endblock %}
+
+{% block content %}
+      <!-- health complains -->
+      <div class="about">
+         <div class="container_width">
+            <div class="row d_flex grig">
+               <div class="col-md-6">
+                  <div class="about_img">
+                     <figure><img src="static/images/about_img.jpg" alt="#"/>
+                     </figure>
+                  </div>
+               </div>
+               <div class="col-md-6 order">
+                  <div class="titlepage text_align_left">
+                     <h2>Health Issues</h2>
+                        <div class="row">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>Severity</th>
+                                        <th>Duration</th>
+                                        <th>Remedy</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for complaint in complaints %}
+                                        <tr>
+                                            <td>{{ complaint.description }}</td>
+                                            <td>{{ complaint.severity }}</td>
+                                            <td>{{ complaint.duration }}</td>
+                                            <td>{{ complaint.remedy }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- end about -->
+{% endblock %}
