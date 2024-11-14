@@ -9,10 +9,16 @@ const ChatInterface = () => {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef(null);
+  const [lastRequestTime, setLastRequestTime] = useState(0);
+  const minRequestInterval = 1000;
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      const scrollArea = scrollAreaRef.current;
+      scrollArea.scrollTo({
+        top: scrollArea.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -20,9 +26,90 @@ const ChatInterface = () => {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessage = async (e) => {
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    console.log("Session ID on load:", sessionId);
+    if (sessionId) {
+        loadConversation(sessionId);
+    }
+}, []);
+
+  const loadConversation = async (sessionId) => {
+    try {
+      const response = await fetch(`/api/chat?session_id=${sessionId}`);
+      const data = await response.json();
+
+      if (data.history) {
+        const formattedMessages = data.history.map(entry => ({
+          content: entry.content,
+          role: entry.role,
+          timestamp: entry.timestamp || new Date().toISOString()
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      setMessages([{
+        content: 'Sorry, there was an error loading the previous conversation.',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+      }]);
+    }
+  };
+
+  // Function to delete a previous chat session
+function deleteSession(sessionId) {
+    if (confirm('Are you sure you want to delete this session?')) {
+        // Send DELETE request to the server to delete the session
+        fetch(`/delete-session/${sessionId}`, {
+            method: 'DELETE', // HTTP method for deletion
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // If successful, remove the session element from the DOM
+                const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
+                if (sessionElement) {
+                    sessionElement.remove();
+                }
+                alert('Session deleted successfully.');
+            } else {
+                alert('Error deleting session.');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting session:', error);
+            alert('An error occurred while trying to delete the session.');
+        });
+    }
+}
+
+const sendMessage = async (e) => {
     e.preventDefault();
+    console.log("sendMessage triggered");
+    const now = Date.now();
+
+    // Check if message is empty or if we're still loading
     if (!inputMessage.trim() || isLoading) return;
+
+    // Rate limiting check
+    if (now - lastRequestTime < minRequestInterval) {
+      // Add a temporary message to show rate limiting
+      setMessages(prev => [...prev, {
+        content: 'Please wait a moment before sending another message...',
+        role: 'system',
+        timestamp: new Date().toISOString(),
+        temporary: true
+      }]);
+
+      // Remove the temporary message after 3 seconds
+      setTimeout(() => {
+        setMessages(prev => prev.filter(msg => !msg.temporary));
+      }, 3000);
+
+      return;
+    }
 
     const newMessage = {
       content: inputMessage,
@@ -33,6 +120,7 @@ const ChatInterface = () => {
     setMessages(prev => [...prev, newMessage]);
     setInputMessage('');
     setIsLoading(true);
+    setLastRequestTime(now);
 
     try {
       const response = await fetch('/api/chat', {
@@ -42,7 +130,7 @@ const ChatInterface = () => {
         },
         body: JSON.stringify({
           message: inputMessage,
-          history: messages,
+          history: messages.filter(msg => msg.role !== 'system'),
         }),
       });
 
@@ -51,7 +139,6 @@ const ChatInterface = () => {
       }
 
       const data = await response.json();
-      
       setMessages(prev => [...prev, {
         content: data.response,
         role: 'assistant',
@@ -75,13 +162,15 @@ const ChatInterface = () => {
         <div className="space-y-4">
           {messages.map((message, index) => (
             <div
-              key={index}
+              key={`${message.timestamp}-${index}`}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
                 className={`max-w-[80%] p-3 rounded-lg ${
                   message.role === 'user'
                     ? 'bg-blue-500 text-white ml-4'
+                    : message.role === 'system'
+                    ? 'bg-yellow-100 text-gray-700'
                     : 'bg-gray-100 text-gray-900 mr-4'
                 }`}
               >
@@ -108,14 +197,15 @@ const ChatInterface = () => {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message..."
+            placeholder="Type your message here..."
             className="flex-grow p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isLoading}
           />
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isLoading || !inputMessage.trim()}
             className="px-4"
+            aria-label="Send message"
           >
             <Send className="w-4 h-4" />
           </Button>

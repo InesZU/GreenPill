@@ -1,110 +1,167 @@
-import time
-from typing import Optional
+import logging
+import os
+import uuid
+import json
+from datetime import datetime
+import openai
 from flask import session
-from openai.types.beta.threads import Run
-from GreenPill_app import threads, client, ASSISTANT_ID
-from datamanager.models import User
+from datamanager.models import User, Session
 from extensions import db
+from dotenv import load_dotenv
+
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+SESSION_FOLDER = "databases/sessions"
 
 
-def predict(message: str, history: list, request) -> str:
-    if 'user_id' not in session:
-        raise ValueError("Unauthorized")
+def get_user_session_folder(user_id):
+    """Return the folder path for storing user session files."""
+    user_folder = os.path.join(SESSION_FOLDER, str(user_id))
+    os.makedirs(user_folder, exist_ok=True)
+    return user_folder
 
-    user = db.session.get(User, session['user_id'])
-    if not user:
-        raise ValueError("User not found")
 
-    session_hash = str(session['user_id'])  # Use user_id as session hash
-    MAX_RETRIES = 2
-    TIMEOUT = 30  # Increased timeout to 30 seconds
-    POLL_INTERVAL = 1  # Poll every 1 second instead of 0.5
+class ChatSessionManager:
+    def __init__(self):
+        api_key = os.getenv("OPENAI_API_KEY")
+        self.client = openai.OpenAI(api_key=api_key)
 
-    def get_or_create_thread():
-        if session_hash in threads:
-            return threads[session_hash]['thread']
-        thread = client.beta.threads.create()
-        threads[session_hash] = {'thread': thread, 'active_run_id': None}
-        return thread
+    @staticmethod
+    def generate_session_title(message: str) -> str:
+        """Generate a title for the chat session based on the first message."""
+        return f"Chat on {message[:30]}..."
 
-    def wait_for_run(thread_id: str, run_id: str) -> Optional[Run]:
-        start_time = time.time()
-        while True:
-            if time.time() - start_time > TIMEOUT:
-                raise TimeoutError("Response timeout")
+    def _format_conversation_history(self, history: list) -> list:
+        """Format the conversation history for OpenAI API."""
+        conversation_history = []
+        for msg in history:
+            if isinstance(msg, str):
+                conversation_history.append({"role": "user", "content": msg})
+            elif isinstance(msg, dict) and "role" in msg and "content" in msg:
+                conversation_history.append(msg)
+            else:
+                raise ValueError("History format is invalid")
+        return conversation_history
 
-            run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
+    def _handle_session_storage(self, user_id: int, session_id: str, message: str, response_text: str) -> None:
+        """Store the chat session in a JSON file with proper formatting."""
+        # Define the file path
+        user_folder = get_user_session_folder(user_id)
+        session_file_path = os.path.join(user_folder, f"{session_id}.json")
 
-            if run.status == "completed":
-                return run
-            elif run.status in ["failed", "cancelled", "expired"]:
-                raise Exception(f"Run failed with status: {run.status}")
-
-            time.sleep(POLL_INTERVAL)
-
-    try:
-        thread = get_or_create_thread()
-
-        # Add user's allergies and conditions to the message for context
-        enhanced_message = (
-            f"User context - Allergies: {user.allergies or 'None'}, "
-            f"Medical conditions: {user.medical_conditions or 'None'}\n\n"
-            f"User message: {message}"
-        )
-
-        # Create message
-        client.beta.threads.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=enhanced_message
-        )
-
-        # Create and monitor run with retries
-        for attempt in range(MAX_RETRIES):
+        # Load existing conversation if it exists
+        history = []
+        if os.path.exists(session_file_path):
             try:
-                run = client.beta.threads.runs.create(
-                    thread_id=thread.id,
-                    assistant_id=ASSISTANT_ID,
-                    instructions=(
-                        "Provide concise natural remedy recommendations. "
-                        "Consider user's allergies and medical conditions. "
-                        "Keep responses under 150 words unless more detail is explicitly requested. "
-                        "If you need clarification, ask at most one brief question."
-                    )
+                with open(session_file_path, 'r') as file:
+                    history = json.load(file)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to load JSON file {session_file_path}: {e}")
+                history = []  # Start with an empty history if loading fails
+
+        # Append new message and response to history
+        history.append({"role": "user", "content": message})
+        history.append({"role": "assistant", "content": response_text})
+
+        # Save updated history back to JSON file, ensuring proper formatting
+        with open(session_file_path, 'w') as file:
+            json.dump(history, file, ensure_ascii=False, indent=4)
+
+    def predict(self, message: str, history: list, request) -> str:
+        """Process a chat message and return the AI response."""
+        if 'user_id' not in session:
+            raise ValueError("Unauthorized")
+
+        user_id = session['user_id']
+        response_text = None
+
+        try:
+            conversation_history = self._format_conversation_history(history)
+            conversation_history.append({"role": "user", "content": message})
+
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=conversation_history
+            )
+
+            response_text = response.choices[0].message.content
+            logger.info(f"Response received: {response_text}")
+
+            # Get or create a session in the database
+            session_id = session.get('current_session_id')
+            if not session_id:
+                # Create a new session if one does not exist
+                session_id = str(uuid.uuid4())
+                session_title = self.generate_session_title(message)
+
+                # Deactivate other active sessions for this user
+                Session.query.filter_by(user_id=user_id, active=True).update({'active': False})
+                new_session = Session(
+                    user_id=user_id,
+                    session_id=session_id,
+                    timestamp=datetime.now(),
+                    title=session_title,
+                    active=True
                 )
+                db.session.add(new_session)
+                session['current_session_id'] = session_id
 
-                threads[session_hash]['active_run_id'] = run.id
+            # Save conversation to JSON file
+            self._handle_session_storage(user_id, session_id, message, response_text)
 
-                # Wait for completion
-                run = wait_for_run(thread.id, run.id)
+            db.session.commit()
 
-                # Get latest message
-                messages = client.beta.threads.messages.list(thread_id=thread.id)
-                if not messages.data:
-                    raise ValueError("No response received")
+        except Exception as e:
+            logger.error(f"Error in predict: {e}")
+            if isinstance(e, ValueError):
+                response_text = "There was a problem with your request. Please try again later."
+            elif isinstance(e, ConnectionError):
+                response_text = "Unable to connect to the server. Please check your connection."
+            else:
+                response_text = f"An error occurred: {e}"
 
-                return messages.data[0].content[0].text.value
+        return response_text or "No response available"
 
-            except TimeoutError:
-                if attempt == MAX_RETRIES - 1:
-                    raise
-                # Cancel the current run before retrying
-                if threads[session_hash].get('active_run_id'):
-                    try:
-                        client.beta.threads.runs.cancel(
-                            thread_id=thread.id,
-                            run_id=threads[session_hash]['active_run_id']
-                        )
-                    except Exception:
-                        pass  # Ignore cancellation errors
-                time.sleep(1)  # Brief pause before retry
+    def get_conversation_history(self, session_id: str, user_id: int) -> list:
+        """Retrieve conversation history for a given session from JSON file with error handling."""
+        user_folder = get_user_session_folder(user_id)
+        session_file_path = os.path.join(user_folder, f"{session_id}.json")
 
-            finally:
-                threads[session_hash]['active_run_id'] = None
+        if os.path.exists(session_file_path):
+            try:
+                with open(session_file_path, 'r') as file:
+                    return json.load(file)
+            except json.JSONDecodeError as e:
+                logger.error(f"Error loading conversation history for session {session_id}: {e}")
+                return []  # Return an empty history if JSON is invalid
+        return []
 
-    except TimeoutError:
-        return ("I apologize, but I'm taking longer than usual to respond. Please try asking your question again, "
-                "perhaps in a simpler way.")
-    except Exception as e:
-        print(f"Error in predict: {e}")
-        return "I encountered an error while processing your request. Please try again."
+    def delete_session(self, session_id: str, user_id: int) -> bool:
+        """Delete a chat session by session ID and remove the corresponding JSON file."""
+        try:
+            session_to_delete = Session.query.filter_by(session_id=session_id, user_id=user_id).first()
+            if session_to_delete:
+                # Delete the session from the database
+                db.session.delete(session_to_delete)
+                db.session.commit()
+
+                # Delete the JSON file containing the conversation history
+                user_folder = get_user_session_folder(user_id)
+                session_file_path = os.path.join(user_folder, f"{session_id}.json")
+                if os.path.exists(session_file_path):
+                    os.remove(session_file_path)
+
+                return True
+            else:
+                logger.warning(f"Session with ID {session_id} not found for user {user_id}.")
+                return False
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error deleting session: {e}")
+            return False
+
+
+# Create a singleton instance
+chat_manager = ChatSessionManager()

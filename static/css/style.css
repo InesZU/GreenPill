@@ -20,7 +20,6 @@ import Fonts -
 import Files 
 ---------------------------------------------------------------------*/
 
-@import url(normalize.css);
 @import url(icomoon.css);
 @import url(font-awesome.min.css);
 @import url(nice-select.css);
@@ -34,7 +33,7 @@ basic
 }
 
 .container {
-    max-width: 1170px;
+    max-width: 5000px;
 }
 
 html {
@@ -902,7 +901,6 @@ button {
     display: block;
     clear: both;
     width: 100%;
-    max-width: 1380px;
 }
 
 .about_img figure {

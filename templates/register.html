@@ -18,7 +18,7 @@
                             {% endif %}
                         {% endwith %}
 
-                        <form method="POST" action="{{ url_for('routes.register') }}">
+                        <form method="POST" action="{{ url_for('register') }}">
                             {{ form.hidden_tag() }}
                             <div class="form-group">
                                 {{ form.username.label(class="form-control-label") }}
@@ -103,7 +103,7 @@
                     </div>
                     <div class="card-footer text-center">
                         <small class="text-muted">
-                            Already Have An Account? <a href="{{ url_for('routes.login') }}">Sign In</a>
+                            Already Have An Account? <a href="{{ url_for('login') }}">Sign In</a>
                         </small>
                     </div>
                 </div>

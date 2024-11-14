@@ -1,47 +1,136 @@
 {% extends "base.html" %}
 
-{% block title %}Issues - GreenPill{% endblock %}
+{% block title %}Health Issues - GreenPill{% endblock %}
 
 {% block content %}
-      <!-- health complains -->
-      <div class="about">
-         <div class="container_width">
-            <div class="row d_flex grig">
-               <div class="col-md-6">
-                  <div class="about_img">
-                     <figure><img src="static/images/about_img.jpg" alt="#"/>
-                     </figure>
-                  </div>
-               </div>
-               <div class="col-md-6 order">
-                  <div class="titlepage text_align_left">
-                     <h2>Health Issues</h2>
-                        <div class="row">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Description</th>
-                                        <th>Severity</th>
-                                        <th>Duration</th>
-                                        <th>Remedy</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for complaint in complaints %}
-                                        <tr>
-                                            <td>{{ complaint.description }}</td>
-                                            <td>{{ complaint.severity }}</td>
-                                            <td>{{ complaint.duration }}</td>
-                                            <td>{{ complaint.remedy }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                  </div>
-               </div>
+<!-- Hero Section -->
+<section class="bg-gradient-to-b from-blue-50 to-white py-12">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-col md:flex-row items-center gap-8">
+            <div class="md:w-1/2">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Health Issues & Solutions</h1>
+                <p class="text-gray-600 text-lg">Track and manage your health concerns with natural remedies.</p>
             </div>
-         </div>
-      </div>
-      <!-- end about -->
+            <div class="md:w-1/2">
+                <img src="static/images/about_img.jpg" alt="Health Issues" class="rounded-lg shadow-lg w-full h-auto object-cover" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filters Section -->
+<section class="py-8 bg-white border-b border-gray-200">
+    <div class="container mx-auto px-4">
+        <div class="flex flex-wrap gap-4 mb-8">
+            <input type="text" placeholder="Search health issues..." class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <select class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Filter by Severity</option>
+                <option value="mild">Mild</option>
+                <option value="moderate">Moderate</option>
+                <option value="severe">Severe</option>
+            </select>
+            <select class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Filter by Duration</option>
+                <option value="acute">Acute</option>
+                <option value="chronic">Chronic</option>
+            </select>
+        </div>
+    </div>
+</section>
+
+<!-- Health Issues Grid -->
+<section class="py-12 bg-gray-100">
+    <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for complaint in complaints %}
+            <article class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-200">
+                <!-- Severity Indicator -->
+                <div class="w-full h-2
+                    {% if complaint.severity == 'Mild' %}bg-green-500
+                    {% elif complaint.severity == 'Moderate' %}bg-yellow-500
+                    {% else %}bg-red-500{% endif %}">
+                </div>
+
+                <!-- Card Header -->
+                <div class="bg-blue-50 px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold text-gray-800">Issue #{{ loop.index }}</h3>
+                        <span class="px-3 py-1 rounded-full text-sm
+                            {% if complaint.severity == 'Mild' %}bg-green-100 text-green-800
+                            {% elif complaint.severity == 'Moderate' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {{ complaint.severity }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Card Content -->
+                <div class="p-6 space-y-4">
+                    <!-- Description Section -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Description:</h4>
+                        <p class="text-gray-600">{{ complaint.description }}</p>
+                    </div>
+
+                    <!-- Duration Section -->
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Duration:</h4>
+                        <p class="text-gray-600">{{ complaint.duration }}</p>
+                    </div>
+
+                    <!-- Remedy Section with Links -->
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">Recommended Remedies:</h4>
+                        {% if complaint.remedies %}
+                            <div class="space-y-2">
+                                {% for remedy in complaint.remedies %}
+                                <a href="{{ url_for('remedies', remedy_id=remedy.id) }}"
+                                   class="block p-3 bg-white rounded-lg border border-green-200 hover:border-green-400 hover:shadow-md transition-all duration-200">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <span class="font-medium text-gray-800">{{ remedy.name }}</span>
+                                            <p class="text-sm text-gray-600 mt-1">{{ remedy.brief_description }}</p>
+                                        </div>
+                                        <span class="text-green-600 hover:text-green-700">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-gray-600">No specific remedies linked to this issue.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="flex gap-2 pt-2">
+                        <button class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 flex-1">
+                            Track Progress
+                        </button>
+                        <button class="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 flex-1">
+                            Save Issue
+                        </button>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Pagination -->
+<section class="py-8 bg-white border-t border-gray-200">
+    <div class="container mx-auto px-4">
+        <div class="flex justify-center gap-2">
+            <button class="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors duration-200">Previous</button>
+            <button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">1</button>
+            <button class="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors duration-200">2</button>
+            <button class="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors duration-200">3</button>
+            <button class="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors duration-200">Next</button>
+        </div>
+    </div>
+</section>
 {% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - GreenPill{% endblock %}
+
+{% block content %}
+    <div class="container mx-auto px-4 py-12">
+        <div class="flex flex-col items-center">
+            <div class="w-full max-w-lg bg-white shadow-lg rounded-lg overflow-hidden">
+                <div class="p-6">
+                    <!-- Chat Container -->
+                    {% if 'user_id' in session %}
+                        <div id="chat-container" class="chat-container">
+                            <div class="chat-messages" id="chat-messages">
+                                <div class="message assistant-message">
+                                    Hello, my name is Sina, how can I assist you today?
+                                </div>
+                            </div>
+                            <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                                <div class="leaf"></div>
+                                <div class="leaf"></div>
+                                <div class="leaf"></div>
+                            </div>
+                            <div class="input-container">
+                                <input type="text" id="message-input" placeholder="Type your message..." autocomplete="off">
+                                <button id="send-button">Send</button>
+                            </div>
+                        </div>
+                    {% elif session_id %}
+                        <div class="chat-history" id="chat-history">
+                            {% for entry in history %}
+                                <div class="message {{ entry.role }}">
+                                    <strong>{{ entry.role }}:</strong> {{ entry.content }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>Please log in to access the AI assistant.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat History Section -->
+        <section class="mt-8 w-full max-w-lg">
+            <h2 class="text-2xl font-semibold mb-4">Previous Sessions</h2>
+            {% if sessions %}
+                <ul class="space-y-4">
+                    {% for chat_session in sessions %}
+                        <li data-session-id="{{ chat_session.session_id }}" class="bg-gray-100 p-4 rounded-lg shadow hover:bg-gray-200 transition-colors">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-grow">
+                                    <h3 class="font-semibold">{{ chat_session.title }}</h3>
+                                    <p class="text-sm text-gray-600">{{ chat_session.timestamp }}</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="reopenSession('{{ chat_session.session_id }}')" class="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600">
+                                        Reopen
+                                    </button>
+                                    <button onclick="deleteSession('{{ chat_session.session_id }}')" class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-gray-600">You have no previous sessions.</p>
+            {% endif %}
+        </section>
+    </div>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
