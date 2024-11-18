@@ -2,7 +2,7 @@ class Config:
     DEBUG = False
     TESTING = False
     SECRET_KEY = 'SECRET_KEY'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///greenpill.sqlite'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///instance/greenpill.sqlite'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 

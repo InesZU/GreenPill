@@ -274,7 +274,7 @@ button {
 }
 
 .read_more:hover {
-    background: #84a102;
+    background: #ffcc02;
     color: #fff;
 }
 
@@ -327,7 +327,7 @@ button {
 /*-- header --*/
 
 .header-area {
-    border-top: #84a102 solid 40px;
+    border-top: #ffcc02 solid 40px;
     width: 100%;
 }
 
@@ -367,10 +367,10 @@ button {
 }
 
 .site-navbar ul li a:hover {
-    color: #84a102;
+    color: #ffcc02;
 }
 .site-navbar ul li a.active {
-    color: #84a102;
+    color: #ffcc02;
 }
 
 /* navbar regular css end */
@@ -601,7 +601,7 @@ button {
 #banner1 .carousel-control-prev:focus,
 #banner1 .carousel-control-prev:hover {
     color: #fff;
-    background: #84a102;
+    background: #ffcc02;
 }
 
 
@@ -611,7 +611,7 @@ button {
 /** appointment  **/
 
 .appointment {
-    background: #84a102;
+    background:#ffcc02;
     padding-top: 90px;
     padding-bottom: 90px;
 }
@@ -663,7 +663,7 @@ button {
 }
 
 .main_form .send_btn:hover {
-    background-color: #84a102;
+    background-color: #ffcc02;
     transition: ease-in all 0.5s;
     box-shadow: 0 0 16px 3px #635d5d38;
     color: #fff;
@@ -725,7 +725,7 @@ button {
 }
 
 #ho_shad:hover .read_more {
-    background: #84a102;
+    background: #ffcc02;
     transition: ease-in all 0.5s;
     color: #fff;
 }
@@ -773,7 +773,7 @@ button {
 }
 
 .our_pri {
-    background: #84a102;
+    background: #ffcc02;
     padding: 30px 20px 45px 20px;
     position: relative;
     z-index: 99;
@@ -855,7 +855,7 @@ button {
 }
 
 .yellow {
-    background: #84a102 !important;
+    background: #ffcc02 !important;
 }
 
 .nostrud {
@@ -890,7 +890,7 @@ button {
 /** about section **/
 
 .about {
-    background: #84a102;
+    background: #ffcc02;
     padding-top: 90px;
     padding-bottom: 90px;
 }
@@ -981,7 +981,7 @@ button {
     display: block;
     line-height: 20px;
     font-size: 15px;
-    color: #84a102;
+    color: #ffcc02;
 }
 
 .test_box p {
@@ -1024,7 +1024,7 @@ button {
 #myCarousel .carousel-control-prev:focus,
 #myCarousel .carousel-control-prev:hover {
     color: #000;
-    background: #84a102;
+    background: #ffcc02;
 }
 
 
@@ -1064,7 +1064,7 @@ button {
     content: "";
     width: 15px;
     height: 15px;
-    background: #84a102;
+    background: #ffcc02;
     top: 5px;
     border-radius: 20px;
     left: -20px;
@@ -1090,7 +1090,7 @@ ul.menu_footer li a {
 }
 
 ul.menu_footer li a:hover {
-    color: #84a102;
+    color: #ffcc02;
 }
 
 .newsl {
@@ -1110,7 +1110,7 @@ ul.menu_footer li a:hover {
 .subsci_btn {
     font-size: 16px;
     transition: ease-in all 0.5s;
-    background-color: #84a102;
+    background-color: #ffcc02;
     text-transform: uppercase;
     color: #fff;
     display: block;
@@ -1126,7 +1126,7 @@ ul.menu_footer li a:hover {
 
 .subsci_btn:hover {
     transition: ease-in all 0.5s;
-    color: #84a102;
+    color: #ffcc02;
     background-color: #fff;
 }
 
@@ -1148,7 +1148,7 @@ ul.top_infomation li {
 
 ul.top_infomation li i {
     margin-right: 5px;
-    color: #84a102;
+    color: #ffcc02;
     text-align: center;
 }
 
@@ -1157,7 +1157,7 @@ ul.top_infomation li a {
 }
 
 ul.top_infomation li a:hover {
-    color: #84a102;
+    color: #ffcc02;
 }
 
 .copyright {
@@ -1168,7 +1168,7 @@ ul.top_infomation li a:hover {
 }
 
 .follow h3 {
-    color: #84a102;
+    color: #ffcc02;
     font-size: 23px;
     padding-bottom: 20px;
     line-height: 23px;
@@ -1195,7 +1195,7 @@ ul.social_icon li a i {
 ul.social_icon li a i:hover {
     color: #fff;
     transition: ease-in all 0.5s;
-    background: #84a102;
+    background: #ffcc02;
 }
 
 .copyright p {
@@ -1212,7 +1212,7 @@ ul.social_icon li a i:hover {
 }
 
 .copyright a:hover {
-    color: #84a102;
+    color: #ffcc02;
 }
 
 

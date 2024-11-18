@@ -1,191 +1,267 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+class ChatManager {
+    constructor() {
+        // Initialize DOM elements
+        this.messageInput = document.getElementById('message-input');
+        this.sendButton = document.getElementById('send-button');
+        this.chatMessages = document.getElementById('chat-messages');
+        this.typingIndicator = document.getElementById('typing-indicator');
+        this.chatContainer = document.getElementById('chat-container');
+        this.sessionsList = document.getElementById('sessions-list');
 
-const ChatInterface = () => {
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollAreaRef = useRef(null);
-  const [lastRequestTime, setLastRequestTime] = useState(0);
-  const minRequestInterval = 1000;
+        // Track current session
+        this.currentSessionId = null;
 
-  const scrollToBottom = () => {
-    if (scrollAreaRef.current) {
-      console.log("Scrolling to bottom...");
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session_id');
-    console.log("Session ID on load:", sessionId);
-    if (sessionId) {
-      loadConversation(sessionId);
-    }
-  }, []);
-
-  const loadConversation = async (sessionId) => {
-    try {
-      const response = await fetch(`/api/chat?session_id=${sessionId}`);
-      const data = await response.json();
-
-      if (data.history) {
-        const formattedMessages = data.history.map(entry => ({
-          content: entry.content,
-          role: entry.role,
-          timestamp: entry.timestamp || new Date().toISOString()
-        }));
-        setMessages(formattedMessages);
-      }
-    } catch (error) {
-      console.error('Error loading conversation:', error);
-      setMessages([{
-        content: 'Sorry, there was an error loading the previous conversation.',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      }]);
-    }
-  };
-
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    console.log("sendMessage triggered");
-    const now = Date.now();
-
-    // Check if message is empty or if we're still loading
-    if (!inputMessage.trim() || isLoading) return;
-
-    // Rate limiting check
-    if (now - lastRequestTime < minRequestInterval) {
-      // Add a temporary message to show rate limiting
-      setMessages(prev => [...prev, {
-        content: 'Please wait a moment before sending another message...',
-        role: 'system',
-        timestamp: new Date().toISOString(),
-        temporary: true
-      }]);
-
-      // Remove the temporary message after 3 seconds
-      setTimeout(() => {
-        setMessages(prev => prev.filter(msg => !msg.temporary));
-      }, 3000);
-
-      return;
+        this.bindEvents();
+        this.loadInitialHistory();
+        this.fetchSessionsList();
+        this.bindDeleteButtons();
     }
 
-    const newMessage = {
-      content: inputMessage,
-      role: 'user',
-      timestamp: new Date().toISOString(),
-    };
+    bindEvents() {
+        if (this.sendButton && this.messageInput) {
+            this.sendButton.addEventListener('click', () => this.handleSendMessage());
 
-    setMessages(prev => [...prev, newMessage]);
-    setInputMessage('');
-    setIsLoading(true);
-    setLastRequestTime(now);
+            this.messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !this.messageInput.disabled) {
+                    e.preventDefault();
+                    this.handleSendMessage();
+                }
+            });
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: inputMessage,
-          history: messages.filter(msg => msg.role !== 'system'),
-        }),
-      });
+            this.messageInput.focus();
+        }
 
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+        if (this.sessionsList) {
+        this.sessionsList.addEventListener('click', (e) => {
+            const target = e.target;
 
-      const data = await response.json();
-      setMessages(prev => [...prev, {
-        content: data.response,
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      }]);
-    } catch (error) {
-      console.error('Error:', error);
-      setMessages(prev => [...prev, {
-        content: 'Sorry, there was an error processing your message.',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      }]);
-    } finally {
-      setIsLoading(false);
+            if (target.classList.contains('btn-reopen')) {
+                const sessionId = target.getAttribute('data-session-id');
+                if (sessionId) {
+                    this.reopenSession(sessionId);
+                }
+            }
+
+            if (target.classList.contains('btn-delete')) {
+                const sessionId = target.getAttribute('data-session-id');
+                if (sessionId) {
+                    this.deleteSession(sessionId);
+                }
+            }
+        });
     }
-  };
+}
 
-  return (
-    <Card className="w-full max-w-2xl mx-auto h-[600px] flex flex-col">
-      <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.timestamp}
-              className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}
-            >
-              <div className="message-content">
-                {message.content.split('\n').map((line, index) => (
-                  <p key={index}>{line}</p>
-                ))}
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-gray-100 p-3 rounded-lg mr-4">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+    loadInitialHistory() {
+        const existingMessages = this.chatMessages.querySelectorAll('.message');
+        if (existingMessages.length > 0) {
+            const urlParams = new URLSearchParams(window.location.search);
+            this.currentSessionId = urlParams.get('session_id');
+        }
+    }
+
+    updateSessionsList(sessions) {
+        if (!this.sessionsList) return;
+
+        this.sessionsList.innerHTML = '';
+
+        sessions.forEach(session => {
+            const sessionDiv = document.createElement('div');
+            sessionDiv.className = 'session-item';
+
+            if (session.session_id === this.currentSessionId) {
+                sessionDiv.classList.add('active');
+            }
+
+            sessionDiv.innerHTML = `
+                <div class="session-info">
+                    <h3>${session.title}</h3>
+                    <p>${session.timestamp}</p>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-      <CardContent className="p-4 border-t">
-        <form onSubmit={sendMessage} className="flex space-x-2">
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage
+                <div class="session-actions">
+                    <button class="btn-reopen" data-session-id="${session.session_id}">
+                        Open
+                    </button>
+                    <button class="btn-delete" data-session-id="${session.session_id}">
+                        Delete
+                    </button>
+                </div>
+            `;
+            this.sessionsList.appendChild(sessionDiv);
+        });
+    }
 
-            // Function to delete a previous chat session
-function deleteSession(sessionId) {
-    if (confirm('Are you sure you want to delete this session?')) {
-        fetch(`/delete-session/${sessionId}`, {
-            method: 'DELETE',
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+    async handleSendMessage() {
+        const message = this.messageInput.value.trim();
+        if (!message) return;
+
+        try {
+            this.setLoadingState(true);
+            this.addMessage(message, true);
+            this.messageInput.value = '';
+
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message,
+                    session_id: this.currentSessionId || null
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send message');
+            }
+
+            this.addMessage(data.response, false);
+
+            if (data.session_id && !this.currentSessionId) {
+                this.currentSessionId = data.session_id;
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('session_id', data.session_id);
+                window.history.pushState({}, '', newUrl);
+
+                await this.fetchSessionsList();
+            }
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            this.addMessage('Sorry, there was an error processing your request.', false);
+        } finally {
+            this.setLoadingState(false);
+        }
+    }
+
+    async fetchSessionsList() {
+        try {
+            const response = await fetch('/api/sessions');
+            const sessions = await response.json();
+            this.updateSessionsList(sessions);
+        } catch (error) {
+            console.error("Error loading sessions:", error);
+        }
+    }
+
+    async reopenSession(sessionId) {
+    try {
+        const response = await fetch(`/sessions/${current_user.id}/${sessionId}`, {
+            method: 'POST'
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            window.location.href = `/chat?session_id=${data.session_id}`;
+        } else {
+            throw new Error(data.error || 'Failed to reopen session');
+        }
+    } catch (error) {
+        console.error("Error reopening session:", error);
+        alert("Failed to reopen session. Please try again.");
+    }
+}
+
+bindDeleteButtons() {
+        // Add click event listeners to all delete buttons
+        document.querySelectorAll('.btn-delete').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sessionId = button.getAttribute('data-session-id');
+                if (sessionId) {
+                    this.deleteSession(sessionId);
+                }
+            });
+        });
+    }
+    async deleteSession(sessionId) {
+        if (!confirm('Are you sure you want to delete this session?')) return;
+
+        try {
+            const response = await fetch(`/api/sessions/${sessionId}/delete`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Remove the session element from the DOM
                 const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
                 if (sessionElement) {
                     sessionElement.remove();
                 }
-                alert('Session deleted successfully.');
+
+                // If we're in the deleted session, redirect to /chat
+                if (sessionId === this.currentSessionId) {
+                    window.location.href = '/chat';
+                }
             } else {
-                alert('Error deleting session.');
+                throw new Error(data.message || 'Failed to delete session');
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error deleting session:', error);
-            alert('An error occurred while trying to delete the session.');
-        });
+            alert('Failed to delete session. Please try again.');
+        }
     }
 }
+
+    addMessage(content, isUser) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+
+        if (Array.isArray(content)) {
+            content.forEach(segment => {
+                const segmentDiv = document.createElement('div');
+
+                if (segment.type === 'text') {
+                    segmentDiv.textContent = segment.content;
+                } else if (segment.type === 'heading') {
+                    segmentDiv.innerHTML = `<strong>${segment.content}</strong>`;
+                } else if (segment.type === 'list') {
+                    const list = document.createElement('ul');
+                    segment.content.forEach(item => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = item;
+                        list.appendChild(listItem);
+                    });
+                    segmentDiv.appendChild(list);
+                }
+
+                contentDiv.appendChild(segmentDiv);
+            });
+        } else {
+            contentDiv.textContent = content;
+        }
+
+        messageDiv.appendChild(contentDiv);
+        this.chatMessages.appendChild(messageDiv);
+        this.scrollToBottom();
+    }
+
+    scrollToBottom() {
+        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+    }
+
+    setLoadingState(isLoading) {
+        if (this.messageInput && this.sendButton && this.typingIndicator) {
+            this.messageInput.disabled = isLoading;
+            this.sendButton.disabled = isLoading;
+            this.typingIndicator.style.display = isLoading ? 'flex' : 'none';
+            if (!isLoading) this.messageInput.focus();
+        }
+    }
+}
+
+// Initialize chat manager when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    const chatManager = new ChatManager();
+    window.chatManager = chatManager;  // Make it globally accessible
+});

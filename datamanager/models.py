@@ -11,14 +11,17 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(128), nullable=False)
-    age = db.Column(db.Integer())
-    gender = db.Column(db.String(50))
-    allergies = db.Column(db.String(200))
-    medical_conditions = db.Column(db.String(200))
+    password = db.Column(db.String(200), nullable=False)
+    age = db.Column(db.Integer, nullable=True)
+    gender = db.Column(db.String(10), nullable=True)
+    allergies = db.Column(db.String(500), nullable=True)
+    medical_conditions = db.Column(db.String(500), nullable=True)
 
     # Sessions relationship
     sessions = db.relationship('Session', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
+
+    def __init__(self):
+        self.password_hash = None
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -63,7 +66,6 @@ class Session(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     session_id = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(255))
-    active = db.Column(db.Boolean, default=True)
 
     # User relationship
     user = db.relationship('User', back_populates='sessions')

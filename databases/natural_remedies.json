@@ -1,0 +1,61 @@
+{
+  "name": "natural_remedies",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "recommendations": {
+        "type": "array",
+        "description": "A list of natural remedies recommended based on user input.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "remedy_name": {
+              "type": "string",
+              "description": "The name of the natural remedy."
+            },
+            "instructions": {
+              "type": "string",
+              "description": "Concise instructions on how to use the remedy."
+            },
+            "allergies": {
+              "type": "array",
+              "description": "Potential allergies related to the remedy.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "medical_conditions": {
+              "type": "array",
+              "description": "Relevant medical conditions where the remedy may be applicable.",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "remedy_name",
+            "instructions",
+            "allergies",
+            "medical_conditions"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "word_count": {
+        "type": "number",
+        "description": "The word count of the recommendations provided."
+      },
+      "clarification_needed": {
+        "type": "string",
+        "description": "A brief question for clarification if needed."
+      }
+    },
+    "required": [
+      "recommendations",
+      "word_count",
+      "clarification_needed"
+    ],
+    "additionalProperties": false
+  },
+  "strict": true
+}

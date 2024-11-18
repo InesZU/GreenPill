@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize the database engine with WAL mode and retry settings
 engine = create_engine(
-    "sqlite:///greenpill.sqlite",
+    "sqlite:///instance/greenpill.sqlite",
     connect_args={
         "check_same_thread": False,  # Allow multithreaded access
         "isolation_level": "AUTOCOMMIT"  # Frequent commits to reduce locking
@@ -51,42 +51,6 @@ def retry_on_lock(max_attempts=3, delay=1):
         return wrapper
 
     return decorator
-
-
-def execute_with_retry():
-    max_retries = 5
-    for attempt in range(max_retries):
-        try:
-            connection = sqlite3.connect('greenpill.sqlite')
-            cursor = connection.cursor()
-            cursor.execute("PRAGMA journal_mode=WAL;")
-            # Your other database operations go here
-            connection.commit()
-            cursor.close()
-            connection.close()
-            return  # Successfully completed the transaction
-        except sqlite3.OperationalError as e:
-            if 'database is locked' in str(e) and attempt < max_retries - 1:
-                time.sleep(1)  # Retry after a short delay
-            else:
-                raise  # Reraise the error if it's not a lock issue or max retries reached
-
-
-execute_with_retry()
-
-
-def set_sqlite_pragma(self):
-    """Set the necessary SQLite PRAGMA settings."""
-    try:
-        connection = sqlite3.connect('greenpill.sqlite',
-                                     timeout=10)
-        cursor = connection.cursor()
-        cursor.execute("PRAGMA journal_mode=WAL;")  # Set WAL mode
-        connection.commit()  # Commit the PRAGMA setting
-        cursor.close()
-        connection.close()
-    except sqlite3.OperationalError as e:
-        print(f"Error setting PRAGMA: {e}")
 
 
 class SQLiteDataManager(DataManagerInterface):
@@ -192,7 +156,7 @@ class SQLiteDataManager(DataManagerInterface):
                 return True
             return False
 
-    def delete_session(self, session_id):
+    def delete_session(self, user_id, session_id):
         """Delete a session by session ID."""
         with self.session_scope() as session:
             session_to_delete = session.query(Session).filter_by(session_id=session_id).first()
@@ -200,3 +164,48 @@ class SQLiteDataManager(DataManagerInterface):
                 session.delete(session_to_delete)
                 return True
             return False
+
+    def add_session(self, user_id, session_id, title, timestamp):
+        """Add a new session to the database."""
+        with self.session_scope() as session:
+            new_session = Session(user_id=user_id, session_id=session_id, title=title, timestamp=timestamp)
+            session.add(new_session)
+            return new_session
+
+    def add_interaction(self, session_id, role, content, timestamp):
+        """Add a new interaction (message) to a session."""
+        with self.session_scope() as session:
+            session_data = session.query(Session).filter_by(session_id=session_id).first()
+            if session_data:
+                if not hasattr(session_data, 'message'):
+                    session_data.message = ""
+                if not hasattr(session_data, 'response'):
+                    session_data.response = ""
+                session_data.message += f"{role}: {content}\n"
+                if role == "assistant":
+                    session_data.response += f"{content}\n"
+                session.commit()
+
+    # New methods added to satisfy DataManagerInterface
+    def get_interactions(self, session_id):
+        """Retrieve interactions (messages) for a session."""
+        with self.session_scope() as session:
+            session_data = session.query(Session).filter_by(session_id=session_id).first()
+            if session_data:
+                messages = session_data.message.split('\n')
+                responses = session_data.response.split('\n')
+                interactions = []
+                max_length = max(len(messages), len(responses))
+
+                for i in range(max_length):
+                    if i < len(messages):
+                        interactions.append({"role": "user", "content": messages[i]})
+                    if i < len(responses):
+                        interactions.append({"role": "assistant", "content": responses[i]})
+                return interactions
+            return []
+
+    def get_session(self, user_id, session_id):
+        """Retrieve a specific session by session_id."""
+        with self.session_scope() as session:
+            return session.query(Session).filter_by(session_id=session_id).first()

@@ -14,10 +14,9 @@ const ChatInterface = () => {
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
-      const scrollArea = scrollAreaRef.current;
-      scrollArea.scrollTo({
-        top: scrollArea.scrollHeight,
-        behavior: 'smooth'
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth',
       });
     }
   };
@@ -29,11 +28,10 @@ const ChatInterface = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get('session_id');
-    console.log("Session ID on load:", sessionId);
     if (sessionId) {
-        loadConversation(sessionId);
+      loadConversation(sessionId);
     }
-}, []);
+  }, []);
 
   const loadConversation = async (sessionId) => {
     try {
@@ -41,73 +39,46 @@ const ChatInterface = () => {
       const data = await response.json();
 
       if (data.history) {
-        const formattedMessages = data.history.map(entry => ({
+        const formattedMessages = data.history.map((entry) => ({
           content: entry.content,
           role: entry.role,
-          timestamp: entry.timestamp || new Date().toISOString()
+          timestamp: entry.timestamp || new Date().toISOString(),
         }));
         setMessages(formattedMessages);
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
-      setMessages([{
-        content: 'Sorry, there was an error loading the previous conversation.',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      }]);
+      setMessages([
+        {
+          content: 'Sorry, there was an error loading the previous conversation.',
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     }
   };
 
-  // Function to delete a previous chat session
-function deleteSession(sessionId) {
-    if (confirm('Are you sure you want to delete this session?')) {
-        // Send DELETE request to the server to delete the session
-        fetch(`/delete-session/${sessionId}`, {
-            method: 'DELETE', // HTTP method for deletion
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // If successful, remove the session element from the DOM
-                const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
-                if (sessionElement) {
-                    sessionElement.remove();
-                }
-                alert('Session deleted successfully.');
-            } else {
-                alert('Error deleting session.');
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting session:', error);
-            alert('An error occurred while trying to delete the session.');
-        });
-    }
-}
-
-const sendMessage = async (e) => {
+  const sendMessage = async (e) => {
     e.preventDefault();
-    console.log("sendMessage triggered");
     const now = Date.now();
 
-    // Check if message is empty or if we're still loading
     if (!inputMessage.trim() || isLoading) return;
 
-    // Rate limiting check
     if (now - lastRequestTime < minRequestInterval) {
-      // Add a temporary message to show rate limiting
-      setMessages(prev => [...prev, {
-        content: 'Please wait a moment before sending another message...',
-        role: 'system',
-        timestamp: new Date().toISOString(),
-        temporary: true
-      }]);
-
-      // Remove the temporary message after 3 seconds
+      // Show rate-limiting message
+      setMessages((prev) => [
+        ...prev,
+        {
+          content: 'Please wait a moment before sending another message...',
+          role: 'system',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
       setTimeout(() => {
-        setMessages(prev => prev.filter(msg => !msg.temporary));
+        setMessages((prev) =>
+          prev.filter((msg) => msg.timestamp !== 'system')
+        );
       }, 3000);
-
       return;
     }
 
@@ -117,7 +88,9 @@ const sendMessage = async (e) => {
       timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    // Add user message to state
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+
     setInputMessage('');
     setIsLoading(true);
     setLastRequestTime(now);
@@ -130,7 +103,7 @@ const sendMessage = async (e) => {
         },
         body: JSON.stringify({
           message: inputMessage,
-          history: messages.filter(msg => msg.role !== 'system'),
+          history: messages, // Using the latest messages array from state
         }),
       });
 
@@ -139,18 +112,24 @@ const sendMessage = async (e) => {
       }
 
       const data = await response.json();
-      setMessages(prev => [...prev, {
+      const assistantMessage = {
         content: data.response,
         role: 'assistant',
         timestamp: new Date().toISOString(),
-      }]);
+      };
+
+      // Add assistant response
+      setMessages((prevMessages) => [...prevMessages, assistantMessage]);
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, {
-        content: 'Sorry, there was an error processing your message.',
-        role: 'assistant',
-        timestamp: new Date().toISOString(),
-      }]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          content: 'Sorry, there was an error processing your message.',
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
