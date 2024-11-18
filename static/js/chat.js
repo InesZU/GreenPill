@@ -2,8 +2,7 @@ class ChatManager {
     constructor() {
         // Initialize DOM elements
         this.messageInput = document.getElementById('message-input');
-        this.sendButton = document.getElementById('send-button');
-        this.chatMessages = document.getElementById('chat-messages');
+        this.sendButton = document.getElementById('send-button');        this.chatMessages = document.getElementById('chat-messages');
         this.typingIndicator = document.getElementById('typing-indicator');
         this.chatContainer = document.getElementById('chat-container');
         this.sessionsList = document.getElementById('sessions-list');
@@ -32,25 +31,25 @@ class ChatManager {
         }
 
         if (this.sessionsList) {
-        this.sessionsList.addEventListener('click', (e) => {
-            const target = e.target;
+            this.sessionsList.addEventListener('click', (e) => {
+                const target = e.target;
 
-            if (target.classList.contains('btn-reopen')) {
-                const sessionId = target.getAttribute('data-session-id');
-                if (sessionId) {
-                    this.reopenSession(sessionId);
+                if (target.classList.contains('btn-reopen')) {
+                    const sessionId = target.getAttribute('data-session-id');
+                    if (sessionId) {
+                        this.reopenSession(sessionId);
+                    }
                 }
-            }
 
-            if (target.classList.contains('btn-delete')) {
-                const sessionId = target.getAttribute('data-session-id');
-                if (sessionId) {
-                    this.deleteSession(sessionId);
+                if (target.classList.contains('btn-delete')) {
+                    const sessionId = target.getAttribute('data-session-id');
+                    if (sessionId) {
+                        this.deleteSession(sessionId);
+                    }
                 }
-            }
-        });
+            });
+        }
     }
-}
 
     loadInitialHistory() {
         const existingMessages = this.chatMessages.querySelectorAll('.message');
@@ -92,8 +91,11 @@ class ChatManager {
     }
 
     async handleSendMessage() {
+        console.log(this.sendButton);  // Ensure it's not null
+        console.log("Send button clicked");  // Log to confirm the function is triggered
         const message = this.messageInput.value.trim();
         if (!message) return;
+        console.log("Message: ", message);  // Log message content
 
         try {
             this.setLoadingState(true);
@@ -208,8 +210,6 @@ bindDeleteButtons() {
             alert('Failed to delete session. Please try again.');
         }
     }
-}
-
     addMessage(content, isUser) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
@@ -255,12 +255,14 @@ bindDeleteButtons() {
             this.messageInput.disabled = isLoading;
             this.sendButton.disabled = isLoading;
             this.typingIndicator.style.display = isLoading ? 'flex' : 'none';
-            if (!isLoading) this.messageInput.focus();
+            if (!isLoading) {
+                this.messageInput.focus();
+            }
         }
     }
 }
 
-// Initialize chat manager when DOM is loaded
+    // Initialize chat manager when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const chatManager = new ChatManager();
     window.chatManager = chatManager;  // Make it globally accessible

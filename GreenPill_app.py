@@ -1,41 +1,41 @@
+import json
+import uuid
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, session
-from openai import OpenAI
-from datamanager.models import User, Remedy, Complaint, Session, UserRemedy
+from flask_login import current_user, login_required, LoginManager, logout_user, login_user
+from flask_limiter.util import get_remote_address
+from chat import chat_manager, get_user_session_folder
+from datamanager.models import User, Remedy, Session, UserRemedy
+from extensions import db
 from forms import RegistrationForm, LoginForm
 from werkzeug.security import generate_password_hash, check_password_hash
-from datamanager.SQLite_Data_manager import SQLiteDataManager
 from flask_migrate import Migrate
-from chat import *
+from datetime import timedelta, datetime
 import logging
-import uuid
+import os
+from dotenv import load_dotenv
 
-SESSION_FOLDER = 'databases/sessions'  # Root folder for session JSON files
-# Ensure the session folder exists
-if not os.path.exists(SESSION_FOLDER):
-    os.makedirs(SESSION_FOLDER)
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
+# Load environment variables
 load_dotenv()
 
+# Initialize Flask app
 app = Flask(__name__)
-app.config.from_object(os.environ.get('APP_SETTINGS', 'config.DevelopmentConfig'))
+app.config.from_object(os.getenv('APP_SETTINGS', 'config.DevelopmentConfig'))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///greenpill.sqlite'
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")  # Added a secret key for sessions
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 
-# Initialize SQLAlchemy with the app
+# Initialize extensions
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# Initialize data manager
-os.makedirs('databases', exist_ok=True)
-data_manager = SQLiteDataManager('greenpill.sqlite')
-api_key = os.getenv("SECRET_KEY")
-
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-ASSISTANT_ID = os.getenv("ASSISTANT_ID")
-
-# Thread storage
-threads = {}
+# Initialize login manager
+login_manager = LoginManager()
+login_manager.login_view = 'login'
+login_manager.init_app(app)
 
 
 def load_data():
@@ -43,23 +43,14 @@ def load_data():
         return json.load(file)
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
-
-
-@app.route('/issues')
-def issues():
-    complaints = load_data().get('complaints', [])
-    user_complain = UserRemedy.query.order_by(UserRemedy.timestamp.desc()).all()
-    return render_template('issues.html', complaints=complaints, user_complain=user_complain)
-
-
-@app.route('/remedies')
-def remedies():
-    herbs = load_data().get('remedies', [])
-    user_remedies = UserRemedy.query.order_by(UserRemedy.timestamp.desc()).all()
-    return render_template('remedies.html', herbs=herbs, user_remedies=user_remedies)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -104,31 +95,172 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm()
-    user = db.session.get(User, session['user_id'])
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
 
-    # Check if user exists
-    if not user:
-        return redirect(url_for('register'))
+    form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and check_password_hash(user.password, form.password.data):
-            session['user_id'] = user.id  # Set user session
-            flash('Login successful!', 'success')
-            return redirect(url_for('home'))
-        else:
-            flash('Login failed. Check email and password', 'danger')
+        try:
+            user = User.query.filter_by(email=form.email.data).first()
+            if user and check_password_hash(user.password, form.password.data):
+                login_user(user, remember=form.remember.data)
+                # Add user_id to the session
+                session['user_id'] = user.id
+                flash('Login successful!', 'success')
+                return redirect(url_for('chat'))
+            else:
+                flash('Invalid email or password.', 'danger')
+        except Exception as e:
+            logger.error(f"Login error: {e}")
+            flash('Login failed. Please try again.', 'danger')
+
     return render_template('login.html', form=form)
 
 
 @app.route('/logout')
+@login_required
 def logout():
-    session.pop('user_id', None)
-    flash('You have been logged out.', 'success')
+    logout_user()
+    flash('You have been logged out.', 'info')
     return redirect(url_for('home'))
 
 
-# Error handlers
+@app.route('/issues')
+def issues():
+    complaints = load_data().get('complaints', [])
+    user_complain = UserRemedy.query.order_by(UserRemedy.timestamp.desc()).all()
+    return render_template('issues.html', complaints=complaints, user_complain=user_complain)
+
+
+@app.route('/remedies')
+def remedies():
+    remedies = Remedy.query.all()
+    return render_template('remedies.html', remedies=remedies)
+
+
+@app.route('/chat', methods=['GET', 'POST'])
+@login_required
+def chat():
+    try:
+        # Handle POST requests (e.g., deleting a session)
+        if request.method == 'POST' and 'delete_session_id' in request.form:
+            delete_session_id = request.form['delete_session_id']
+            chat_session = Session.query.filter_by(
+                session_id=delete_session_id,
+                user_id=current_user.id
+            ).first()
+
+            if chat_session:
+                session_file_path = os.path.join(
+                    get_user_session_folder(current_user.id),
+                    f"{delete_session_id}.json"
+                )
+
+                # Delete session file
+                if os.path.exists(session_file_path):
+                    os.remove(session_file_path)
+
+                # Delete session record from the database
+                db.session.delete(chat_session)
+                db.session.commit()
+                flash('Session deleted successfully.', 'success')
+            else:
+                flash('Session not found.', 'danger')
+
+            return redirect(url_for('chat'))
+
+        # Handle GET requests (loading chat history and sessions)
+        session_id = request.args.get('session_id')  # Extract session ID from query parameters
+        sessions = Session.query.filter_by(user_id=current_user.id).order_by(Session.timestamp.desc()).all()
+        history = []
+
+        if session_id:
+            chat_session = Session.query.filter_by(
+                session_id=session_id,
+                user_id=current_user.id
+            ).first_or_404()
+
+            session_file_path = os.path.join(
+                get_user_session_folder(current_user.id),
+                f"{session_id}.json"
+            )
+
+            if os.path.exists(session_file_path):
+                with open(session_file_path, 'r') as file:
+                    history = json.load(file)
+            else:
+                flash('Session file not found.', 'warning')
+
+        return render_template('chat.html', sessions=sessions, history=history, session_id=session_id)
+
+    except Exception as e:
+        logger.error(f"Error loading chat: {e}")
+        flash('Error loading chat session.', 'danger')
+        return redirect(url_for('home'))
+
+
+@app.route('/api/chat', methods=['POST'])
+@login_required
+def chat_api():
+    try:
+        message = request.json.get('message', '').strip()
+        session_id = request.json.get('session_id')
+
+        if not message:
+            return jsonify({'error': 'No message provided'}), 400
+
+        # Get or create session
+        if session_id:
+            chat_session = Session.query.filter_by(
+                session_id=session_id,
+                user_id=current_user.id
+            ).first()
+        else:
+            session_id = str(uuid.uuid4())
+            chat_session = Session(
+                session_id=session_id,
+                user_id=current_user.id,
+                timestamp=datetime.now(),
+                title=chat_manager.generate_session_title(message)
+            )
+            db.session.add(chat_session)
+
+        # Load or initialize history
+        user_folder = get_user_session_folder(current_user.id)
+        session_file_path = os.path.join(user_folder, f"{session_id}.json")
+
+        if os.path.exists(session_file_path):
+            with open(session_file_path, 'r') as file:
+                history = json.load(file)
+        else:
+            history = []
+
+        # Generate response
+        response_text = chat_manager.predict(message, history, request)
+
+        # Update session
+        chat_session.timestamp = datetime.now()
+        db.session.commit()
+
+        # Update and save history
+        history.append({"role": "user", "content": message})
+        history.append({"role": "assistant", "content": response_text})
+
+        with open(session_file_path, 'w') as file:
+            json.dump(history, file)
+
+        return jsonify({
+            'response': response_text,
+            'session_id': chat_session.session_id,
+            'session_title': chat_session.title,
+            'timestamp': chat_session.timestamp.strftime('%Y-%m-%d %H:%M')
+        })
+
+    except Exception as e:
+        logger.error(f"Chat API error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -136,211 +268,8 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
+    logger.error(f"Internal server error: {e}")
     return render_template('500.html'), 500
-
-
-@app.route('/chat')
-def chat():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-
-    user_id = session.get('user_id')
-    session_id = request.args.get('session_id')
-    sessions = Session.query.filter_by(user_id=user_id).order_by(Session.timestamp.desc()).all()
-    history = []
-
-    if session_id:
-        chat_session = Session.query.filter_by(session_id=session_id, user_id=user_id).first()
-        if chat_session:
-            user_folder = get_user_session_folder(user_id)
-            session_file_path = os.path.join(user_folder, f"{session_id}.json")
-
-            if os.path.exists(session_file_path):
-                with open(session_file_path, 'r') as file:
-                    history = json.load(file)
-
-    return render_template('chat.html', sessions=sessions, history=history, session_id=session_id)
-
-
-# Chat API Route
-@app.route('/api/chat', methods=['POST'])
-def chat_api():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    user_id = session.get('user_id')
-    message = request.json.get('message')
-
-    if not message or not message.strip():
-        return jsonify({'error': 'No message provided'}), 400
-
-    try:
-        # Handle session data
-        current_session_id = session.get('current_session_id')
-        session_data = Session.query.filter_by(session_id=current_session_id,
-                                               user_id=user_id).first() if current_session_id else None
-
-        # Construct message and response history
-        history = []
-        if session_data:
-            user_folder = get_user_session_folder(user_id)
-            session_file_path = os.path.join(user_folder, f"{current_session_id}.json")
-
-            if os.path.exists(session_file_path):
-                with open(session_file_path, 'r') as file:
-                    history = json.load(file)
-
-        response_text = chat_manager.predict(message, history, request)
-
-        # Update or create session
-        if session_data:
-            session_data.timestamp = datetime.now()
-        else:
-            # Create a new session if none exists
-            current_session_id = str(uuid.uuid4())
-            session_title = chat_manager.generate_session_title(message)
-
-            # Deactivate other active sessions
-            Session.query.filter_by(user_id=user_id, active=True).update({'active': False})
-
-            session_data = Session(
-                user_id=user_id,
-                session_id=current_session_id,
-                timestamp=datetime.now(),
-                title=session_title,
-                active=True
-            )
-            db.session.add(session_data)
-            session['current_session_id'] = current_session_id
-
-        # Update history and save conversation to JSON file
-        history.append({"role": "user", "content": message})
-        history.append({"role": "assistant", "content": response_text})
-
-        # Save updated history to JSON file
-        user_folder = get_user_session_folder(user_id)
-        session_file_path = os.path.join(user_folder, f"{current_session_id}.json")
-
-        with open(session_file_path, 'w') as file:
-            json.dump(history, file)
-
-        db.session.commit()
-
-        return jsonify({
-            'response': response_text,
-            'session_id': session_data.session_id,
-            'session_title': session_data.title,
-            'timestamp': session_data.timestamp.strftime('%Y-%m-%d %H:%M')
-        })
-
-    except Exception as e:
-        logger.error(f"Error in chat_api: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-def get_user_session_folder(user_id):
-    """Returns the directory path for a specific user's session files."""
-    user_folder = os.path.join(SESSION_FOLDER, str(user_id))
-    if not os.path.exists(user_folder):
-        os.makedirs(user_folder)
-    return user_folder
-
-
-@app.route('/sessions', methods=['GET'])
-def get_sessions():
-    """Retrieve all chat sessions for the logged-in user."""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    try:
-        user_id = session['user_id']
-        sessions = Session.query.filter_by(user_id=user_id).order_by(Session.timestamp.desc()).all()
-
-        sessions_list = [{
-            'session_id': s.session_id,
-            'title': s.title,
-            'timestamp': s.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            'active': s.active,
-        } for s in sessions]
-
-        return jsonify({'sessions': sessions_list})
-
-    except Exception as e:
-        logger.error(f"Error in get_sessions: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@app.route('/sessions/<session_id>', methods=['POST'])
-def reopen_session(session_id):
-    """Reopen a specified chat session and retrieve its history from the JSON file."""
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    try:
-        user_id = session['user_id']
-        session_data = Session.query.filter_by(session_id=session_id, user_id=user_id).first()
-
-        if not session_data:
-            return jsonify({'error': 'Session not found'}), 404
-
-        # Activate the session
-        Session.query.filter_by(user_id=user_id, active=True).update({'active': False})
-        session_data.active = True
-        session['current_session_id'] = session_id
-        db.session.commit()
-
-        # Load conversation history from JSON
-        user_folder = get_user_session_folder(user_id)
-        session_file_path = os.path.join(user_folder, f"{session_id}.json")
-
-        if not os.path.exists(session_file_path):
-            return jsonify({'error': 'Session history not found'}), 404
-
-        with open(session_file_path, 'r') as file:
-            history = json.load(file)
-
-        return jsonify({
-            'session_id': session_id,
-            'history': history,
-            'session_title': session_data.title,
-            'timestamp': session_data.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-        })
-
-    except Exception as e:
-        logger.error(f"Error in reopen_session: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Internal server error'}), 500
-
-
-@app.route('/sessions/<int:session_id>/activate', methods=['POST'])
-def activate_session(session_id):
-    # Find the session by session_id
-    session = Session.query.filter_by(session_id=session_id).first()
-
-    if session:
-        # Set this session as active, and deactivate others for the same user
-        data_manager.set_session_active(session.user_id, session_id)
-        return jsonify({"message": "Session activated successfully."}), 200
-    else:
-        return jsonify({"error": "Session not found."}), 404
-
-
-@app.route('/delete-session/<session_id>', methods=['DELETE'])
-def delete_session(session_id):
-    # Query the session by session_id (assuming 'Session' is your session model)
-    session_to_delete = Session.query.filter_by(session_id=session_id).first()
-
-    if session_to_delete:
-        try:
-            # Delete the session from the database
-            db.session.delete(session_to_delete)
-            db.session.commit()
-            return jsonify({'success': True}), 200
-        except Exception as e:
-            db.session.rollback()  # Rollback in case of error
-            print(e)
-            return jsonify({'success': False, 'error': 'Failed to delete session'}), 500
-    else:
-        return jsonify({'success': False, 'error': 'Session not found'}), 404
 
 
 if __name__ == '__main__':

@@ -97,13 +97,11 @@ class ChatSessionManager:
                 session_title = self.generate_session_title(message)
 
                 # Deactivate other active sessions for this user
-                Session.query.filter_by(user_id=user_id, active=True).update({'active': False})
                 new_session = Session(
                     user_id=user_id,
                     session_id=session_id,
                     timestamp=datetime.now(),
                     title=session_title,
-                    active=True
                 )
                 db.session.add(new_session)
                 session['current_session_id'] = session_id
