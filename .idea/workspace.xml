@@ -158,7 +158,23 @@
       <option name="project" value="LOCAL" />
       <updated>1731948445794</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="fixed reopen and delete session buttons">
+      <option name="closed" value="true" />
+      <created>1732037336758</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1732037336758</updated>
+    </task>
+    <task id="LOCAL-00010" summary="fixed reopen and delete session buttons">
+      <option name="closed" value="true" />
+      <created>1732037466676</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1732037466676</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -178,6 +194,7 @@
     <MESSAGE value="update files" />
     <MESSAGE value="fixed delete sessions" />
     <MESSAGE value="update js" />
-    <option name="LAST_COMMIT_MESSAGE" value="update js" />
+    <MESSAGE value="fixed reopen and delete session buttons" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed reopen and delete session buttons" />
   </component>
 </project>
