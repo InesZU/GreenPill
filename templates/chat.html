@@ -11,9 +11,23 @@
                     {% if 'user_id' in session %}
                         <div id="chat-container" class="chat-container">
                             <div class="chat-messages" id="chat-messages">
-                                <div class="message assistant-message">
-                                    Hello, my name is Sina, how can I assist you today?
-                                </div>
+                                {% if history %}
+                                    {% for msg in history %}
+                                        {% if msg.role == 'user' %}
+                                            <div class="message user-message">
+                                                {{ msg.content|safe }}
+                                            </div>
+                                        {% else %}
+                                            <div class="message assistant-message">
+                                                {{ msg.content|safe }}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="message assistant-message">
+                                        Hello, my name is Sina, how can I assist you today?
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="typing-indicator" id="typing-indicator" style="display: none;">
                                 <div class="leaf"></div>
@@ -26,17 +40,34 @@
                             </div>
                         </div>
                     {% elif session_id %}
-                        <div class="chat-history" id="chat-history">
-                            {% for entry in history %}
-                                <div class="message {{ entry.role }}">
-                                    <strong>{{ entry.role }}:</strong> {{ entry.content }}
-                                </div>
-                            {% endfor %}
+                        <!-- Add this at the top of your chat container for debugging -->
+                        <div style="display: none;">
+                            Debug - History length: {{ history|length if history else 0 }}
+                            {% if history %}
+                                First message: {{ history[0] }}
+                            {% endif %}
                         </div>
-                    {% else %}
-                        <p>Please log in to access the AI assistant.</p>
+                        <!-- Your existing chat messages container -->
+                        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                            {% if history %}
+                                {% for msg in history %}
+                                    {% if msg.role == 'user' %}
+                                        <div class="flex justify-end mb-4">
+                                            <div class="bg-blue-500 text-white rounded-lg p-3 max-w-3/4">
+                                                {{ msg.content|safe }}
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="flex justify-start mb-4">
+                                            <div class="bg-gray-200 rounded-lg p-3 max-w-3/4">
+                                                {{ msg.content|safe }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
                     {% endif %}
-                </div>
             </div>
         </div>
 
@@ -53,13 +84,12 @@
                                     <p class="text-sm text-gray-600">{{ chat_session.timestamp }}</p>
                                 </div>
                                 <div class="flex space-x-2">
-                                    <form action="{{ url_for('chat', session_id=chat_session.session_id) }}" method="GET" style="display: inline">
-                                        <button type="submit" class="text-blue-600 hover:text-blue-800">Reopen</button>
-                                    </form>
-                                    <form action="{{ url_for('chat') }}" method="POST" style="display: inline" onsubmit="return confirm('Are you sure you want to delete this session?');">
-                                        <input type="hidden" name="delete_session_id" value="{{ chat_session.session_id }}">
-                                        <button type="submit" class="text-red-600 hover:text-red-800">Delete</button>
-                                    </form>
+                                    <a href="{{ url_for('chat', session_id=chat_session.session_id) }}" class="text-blue-600 hover:text-blue-800">Reopen</a>
+                                    <button 
+                                        class="btn-delete text-red-600 hover:text-red-800" 
+                                        data-session-id="{{ chat_session.session_id }}">
+                                        Delete
+                                    </button>
                                 </div>
                             </div>
                         </li>
@@ -72,17 +102,20 @@
     </div>
 <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Add click event listeners to all delete buttons
-    document.querySelectorAll('.btn-delete').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const sessionId = this.getAttribute('data-session-id');
-            if (sessionId && window.chatManager) {
-                window.chatManager.deleteSession(sessionId);
-            }
+    const chatHistory = JSON.parse('{{ history|default([])|tojson|safe }}');
+    console.log('Chat history:', chatHistory);
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click event listeners to all delete buttons
+        document.querySelectorAll('.btn-delete').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const sessionId = this.getAttribute('data-session-id');
+                if (sessionId && window.chatManager) {
+                    window.chatManager.deleteSession(sessionId);
+                }
+            });
         });
     });
-});
 </script>
 {% endblock %}

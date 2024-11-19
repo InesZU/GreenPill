@@ -45,7 +45,7 @@ def load_data():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 @app.route('/')
@@ -139,64 +139,36 @@ def remedies():
 
 
 @app.route('/chat', methods=['GET', 'POST'])
-@login_required
 def chat():
-    try:
-        # Handle POST requests (e.g., deleting a session)
-        if request.method == 'POST' and 'delete_session_id' in request.form:
-            delete_session_id = request.form['delete_session_id']
-            chat_session = Session.query.filter_by(
-                session_id=delete_session_id,
-                user_id=current_user.id
-            ).first()
-
-            if chat_session:
-                session_file_path = os.path.join(
-                    get_user_session_folder(current_user.id),
-                    f"{delete_session_id}.json"
-                )
-
-                # Delete session file
-                if os.path.exists(session_file_path):
-                    os.remove(session_file_path)
-
-                # Delete session record from the database
-                db.session.delete(chat_session)
-                db.session.commit()
-                flash('Session deleted successfully.', 'success')
-            else:
-                flash('Session not found.', 'danger')
-
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user_id = session['user_id']
+    session_id = request.args.get('session_id')
+    
+    if session_id:
+        try:
+            # Use the exact file path structure you confirmed
+            file_path = f"databases/sessions/{user_id}/{session_id}.json"
+            
+            chat_history = []
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    chat_history = json.load(f)
+                    print(f"Loaded chat history: {chat_history}")  # Debug print
+            
+            session['current_session_id'] = session_id
+            return render_template('chat.html', 
+                                 history=chat_history,  # Pass the full history
+                                 sessions=Session.query.filter_by(user_id=user_id).all())
+                                 
+        except Exception as e:
+            print(f"Error: {str(e)}")
             return redirect(url_for('chat'))
 
-        # Handle GET requests (loading chat history and sessions)
-        session_id = request.args.get('session_id')  # Extract session ID from query parameters
-        sessions = Session.query.filter_by(user_id=current_user.id).order_by(Session.timestamp.desc()).all()
-        history = []
-
-        if session_id:
-            chat_session = Session.query.filter_by(
-                session_id=session_id,
-                user_id=current_user.id
-            ).first_or_404()
-
-            session_file_path = os.path.join(
-                get_user_session_folder(current_user.id),
-                f"{session_id}.json"
-            )
-
-            if os.path.exists(session_file_path):
-                with open(session_file_path, 'r') as file:
-                    history = json.load(file)
-            else:
-                flash('Session file not found.', 'warning')
-
-        return render_template('chat.html', sessions=sessions, history=history, session_id=session_id)
-
-    except Exception as e:
-        logger.error(f"Error loading chat: {e}")
-        flash('Error loading chat session.', 'danger')
-        return redirect(url_for('home'))
+    return render_template('chat.html',
+                         history=[],
+                         sessions=Session.query.filter_by(user_id=user_id).all())
 
 
 @app.route('/api/chat', methods=['POST'])
@@ -235,8 +207,8 @@ def chat_api():
         else:
             history = []
 
-        # Generate response
-        response_text = chat_manager.predict(message, history, request)
+        # Generate response - fixed argument count
+        response_text = chat_manager.predict(message, history)  # Removed the request argument
 
         # Update session
         chat_session.timestamp = datetime.now()
@@ -246,6 +218,10 @@ def chat_api():
         history.append({"role": "user", "content": message})
         history.append({"role": "assistant", "content": response_text})
 
+        # Ensure the user folder exists
+        os.makedirs(os.path.dirname(session_file_path), exist_ok=True)
+        
+        # Save the updated history
         with open(session_file_path, 'w') as file:
             json.dump(history, file)
 
@@ -272,7 +248,53 @@ def internal_server_error(e):
     return render_template('500.html'), 500
 
 
+# Add this new route to handle session deletion
+@app.route('/api/sessions/<session_id>/delete', methods=['DELETE'])
+@login_required
+def delete_session(session_id):
+    try:
+        # Find the session in SQL database
+        chat_session = Session.query.filter_by(
+            session_id=session_id,
+            user_id=current_user.id
+        ).first()
+        
+        if not chat_session:
+            return jsonify({'error': 'Session not found'}), 404
+
+        # Delete the JSON file from user's folder
+        user_folder = f"databases/sessions/{current_user.id}"
+        json_file = f"{session_id}.json"
+        file_path = os.path.join(user_folder, json_file)
+        
+        # Delete JSON file if it exists
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                logger.info(f"Deleted JSON file: {file_path}")
+            except Exception as e:
+                logger.error(f"Error deleting JSON file: {e}")
+                return jsonify({'error': 'Failed to delete session file'}), 500
+
+        # Delete from SQL database
+        try:
+            db.session.delete(chat_session)
+            db.session.commit()
+            logger.info(f"Deleted session from database: {session_id}")
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Database error: {e}")
+            return jsonify({'error': 'Failed to delete session from database'}), 500
+
+        return jsonify({'message': 'Session deleted successfully'})
+
+    except Exception as e:
+        logger.error(f"Error in delete_session: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
+    

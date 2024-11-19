@@ -66,6 +66,7 @@ class Session(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     session_id = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
     title = db.Column(db.String(255))
+    messages = db.relationship('Message', backref='session', lazy=True)
 
     # User relationship
     user = db.relationship('User', back_populates='sessions')
@@ -78,3 +79,13 @@ class UserRemedy(db.Model):
     user_name = db.Column(db.String(100), nullable=False)
     remedy_details = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Message(db.Model):
+    __tablename__ = 'message'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('session.id'))
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_user = db.Column(db.Boolean, default=True)

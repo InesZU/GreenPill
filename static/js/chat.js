@@ -167,50 +167,56 @@ class ChatManager {
 }
 
 bindDeleteButtons() {
-        // Add click event listeners to all delete buttons
-        document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                const sessionId = button.getAttribute('data-session-id');
-                if (sessionId) {
-                    this.deleteSession(sessionId);
-                }
-            });
-        });
-    }
-    async deleteSession(sessionId) {
-        if (!confirm('Are you sure you want to delete this session?')) return;
-
-        try {
-            const response = await fetch(`/api/sessions/${sessionId}/delete`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // Remove the session element from the DOM
-                const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
-                if (sessionElement) {
-                    sessionElement.remove();
-                }
-
-                // If we're in the deleted session, redirect to /chat
-                if (sessionId === this.currentSessionId) {
-                    window.location.href = '/chat';
-                }
-            } else {
-                throw new Error(data.message || 'Failed to delete session');
+    // Use event delegation for delete buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-delete')) {
+            e.preventDefault();
+            const sessionId = e.target.getAttribute('data-session-id');
+            if (sessionId) {
+                this.deleteSession(sessionId);
             }
-        } catch (error) {
-            console.error('Error deleting session:', error);
-            alert('Failed to delete session. Please try again.');
         }
+    });
+}
+
+async deleteSession(sessionId) {
+    if (!confirm('Are you sure you want to delete this session?')) return;
+
+    try {
+        const response = await fetch(`/api/sessions/${sessionId}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            // Remove the session element from the DOM
+            const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`).closest('li');
+            if (sessionElement) {
+                sessionElement.remove();
+            }
+
+            // If we're currently viewing the deleted session, redirect to chat
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentSessionId = urlParams.get('session_id');
+            if (sessionId === currentSessionId) {
+                window.location.href = '/chat';
+            } else {
+                // Optional: Refresh the sessions list
+                await this.fetchSessionsList();
+            }
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete session');
+        }
+    } catch (error) {
+        console.error('Error deleting session:', error);
+        alert('Failed to delete session. Please try again.');
     }
-    addMessage(content, isUser) {
+}
+
+addMessage(content, isUser) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
 

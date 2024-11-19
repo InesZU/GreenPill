@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 import openai
 from flask import session
-from datamanager.models import User, Session
+from datamanager.models import User, Session, Message
 from extensions import db
 from dotenv import load_dotenv
 
@@ -69,58 +69,71 @@ class ChatSessionManager:
         with open(session_file_path, 'w') as file:
             json.dump(history, file, ensure_ascii=False, indent=4)
 
-    def predict(self, message: str, history: list, request) -> str:
-        """Process a chat message and return the AI response."""
-        if 'user_id' not in session:
-            raise ValueError("Unauthorized")
-
-        user_id = session['user_id']
-        response_text = None
-
+    def load_conversation(self, session_id):
         try:
-            conversation_history = self._format_conversation_history(history)
-            conversation_history.append({"role": "user", "content": message})
+            # Fetch session from database
+            chat_session = Session.query.filter_by(session_id=session_id).first()
+            if not chat_session:
+                return []
 
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=conversation_history
-            )
+            # Load messages from both DB and JSON
+            messages = []
+            
+            # Get messages from database
+            db_messages = Message.query.filter_by(session_id=chat_session.id).order_by(Message.timestamp).all()
+            for msg in db_messages:
+                messages.append({
+                    "role": "user" if msg.is_user else "assistant",
+                    "content": msg.content
+                })
 
-            response_text = response.choices[0].message.content
-            logger.info(f"Response received: {response_text}")
+            # Load JSON history if exists
+            json_path = f"chat_history/{session_id}.json"
+            if os.path.exists(json_path):
+                with open(json_path, 'r') as f:
+                    json_messages = json.load(f)
+                    messages.extend(json_messages)
 
-            # Get or create a session in the database
-            session_id = session.get('current_session_id')
-            if not session_id:
-                # Create a new session if one does not exist
-                session_id = str(uuid.uuid4())
-                session_title = self.generate_session_title(message)
-
-                # Deactivate other active sessions for this user
-                new_session = Session(
-                    user_id=user_id,
-                    session_id=session_id,
-                    timestamp=datetime.now(),
-                    title=session_title,
-                )
-                db.session.add(new_session)
-                session['current_session_id'] = session_id
-
-            # Save conversation to JSON file
-            self._handle_session_storage(user_id, session_id, message, response_text)
-
-            db.session.commit()
+            return messages
 
         except Exception as e:
-            logger.error(f"Error in predict: {e}")
-            if isinstance(e, ValueError):
-                response_text = "There was a problem with your request. Please try again later."
-            elif isinstance(e, ConnectionError):
-                response_text = "Unable to connect to the server. Please check your connection."
-            else:
-                response_text = f"An error occurred: {e}"
+            logger.error(f"Error loading conversation: {str(e)}")
+            return []
 
-        return response_text or "No response available"
+    def predict(self, message, history=None):
+        try:
+            # Initialize history if None
+            if history is None:
+                history = []
+            
+            # Prepare messages for API call
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant."}
+            ]
+            
+            # Add history to messages
+            for msg in history:
+                messages.append(msg)
+            
+            # Add current message
+            messages.append({"role": "user", "content": message})
+
+            # Make API call (synchronous)
+            response = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1000
+            )
+
+            # Get response text
+            ai_message = response.choices[0].message.content
+
+            return ai_message
+
+        except Exception as e:
+            logger.error(f"Error in predict: {str(e)}")
+            raise
 
     def get_conversation_history(self, session_id: str, user_id: int) -> list:
         """Retrieve conversation history for a given session from JSON file with error handling."""
@@ -159,6 +172,40 @@ class ChatSessionManager:
             db.session.rollback()
             logger.error(f"Error deleting session: {e}")
             return False
+
+    def save_message(self, user_id, session_id, content, is_user=True):
+        try:
+            chat_session = Session.query.filter_by(session_id=session_id).first()
+            if not chat_session:
+                return
+            
+            message = Message(
+                session_id=chat_session.id,
+                content=content,
+                is_user=is_user,
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(message)
+            db.session.commit()
+
+            # Also save to JSON as backup
+            json_path = f"chat_history/{session_id}.json"
+            messages = []
+            if os.path.exists(json_path):
+                with open(json_path, 'r') as f:
+                    messages = json.load(f)
+            
+            messages.append({
+                "role": "user" if is_user else "assistant",
+                "content": content
+            })
+            
+            with open(json_path, 'w') as f:
+                json.dump(messages, f)
+
+        except Exception as e:
+            logger.error(f"Error saving message: {str(e)}")
+            db.session.rollback()
 
 
 # Create a singleton instance
