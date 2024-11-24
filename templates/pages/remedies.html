@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Natural Remedies - GreenPill{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Your Natural Remedies</h1>
+    
+    {% if remedies_data %}
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {% for data in remedies_data %}
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-green-600">{{ data.remedy.name }}</h2>
+                        <span class="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded">
+                            Suggested {{ data.remedy.times_suggested }} times
+                        </span>
+                    </div>
+                    
+                    <p class="text-gray-600 mb-4">{{ data.remedy.description }}</p>
+                    
+                    <div class="mb-4">
+                        <h3 class="text-sm font-semibold text-gray-500 mb-2">How to Use:</h3>
+                        <p class="text-sm text-gray-600">{{ data.remedy.usage_instructions }}</p>
+                    </div>
+
+                    {% if data.conditions %}
+                        <div class="mb-4">
+                            <h3 class="text-sm font-semibold text-gray-500 mb-2">Helpful For:</h3>
+                            <div class="flex flex-wrap gap-2">
+                                {% for condition in data.conditions %}
+                                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                        {{ condition }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if data.sessions %}
+                        <div class="mt-4">
+                            <h3 class="text-sm font-semibold text-gray-500 mb-2">Suggested In:</h3>
+                            <ul class="space-y-2">
+                                {% for session in data.sessions %}
+                                    <li>
+                                        <a href="{{ url_for('chat', session_id=session.session_id) }}" 
+                                           class="text-blue-500 hover:text-blue-700 text-sm flex items-center">
+                                            <span class="mr-2">{{ session.title }}</span>
+                                            <span class="text-xs text-gray-500">
+                                                {{ session.timestamp.strftime('%Y-%m-%d') }}
+                                            </span>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-12">
+            <p class="text-gray-600">No remedies suggested yet. Start a chat to get natural health recommendations.</p>
+            <a href="{{ url_for('chat') }}" class="mt-4 inline-block bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                Start New Chat
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

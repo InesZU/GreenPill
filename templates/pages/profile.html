@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3>Profile Information</h3>
+                    <button class="btn btn-link" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="fas fa-edit fa-lg"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Username</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.username }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Email</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.email }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Age</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.age }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Gender</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.gender }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Allergies</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.allergies or 'None' }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row mb-3">
+                        <div class="col-sm-3">
+                            <h6 class="mb-0">Medical Conditions</h6>
+                        </div>
+                        <div class="col-sm-9 text-secondary">
+                            {{ current_user.medical_conditions or 'None' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('update_profile') }}">
+                <div class="modal-body">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control", value=current_user.username) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control", value=current_user.email) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.age.label(class="form-label") }}
+                        {{ form.age(class="form-control", value=current_user.age) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.gender.label(class="form-label") }}
+                        {{ form.gender(class="form-control") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.allergies.label(class="form-label") }}
+                        {{ form.allergies(class="form-control", value=current_user.allergies) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.conditions.label(class="form-label") }}
+                        {{ form.conditions(class="form-control", value=current_user.medical_conditions) }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set the current gender value in the select field
+    const genderSelect = document.querySelector('select[name="gender"]');
+    if (genderSelect) {
+        genderSelect.value = "{{ current_user.gender }}";
+    }
+});
+</script>
+{% endblock %} 

@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
-from datamanager.models import User, Remedy, Complaint, Session
+from datamanager.models import User, Remedy, Issue, Session
 from datamanager.Data_Maneger import DataManagerInterface
 from contextlib import contextmanager
 import logging
@@ -97,20 +97,29 @@ class SQLiteDataManager(DataManagerInterface):
     # Remedies management
     def get_remedies(self, limit=10, offset=0):
         with self.session_scope() as session:
-            return session.query(Remedy).join(Remedy.complaint).limit(limit).offset(offset).all()
+            return session.query(Remedy).limit(limit).offset(offset).all()
 
     def get_remedy_by_name(self, name):
         with self.session_scope() as session:
             return session.query(Remedy).filter_by(name=name).first()
 
-    def get_remedies_by_complaint(self, complaint_id):
+    def get_remedies_by_issue(self, issue_id):
         with self.session_scope() as session:
-            return session.query(Remedy).filter_by(complaint_id=complaint_id).all()
+            issue = session.query(Issue).get(issue_id)
+            return issue.remedies if issue else []
 
-    # Complaints management
-    def get_complaints(self, limit=10):
+    # Issues management
+    def get_issues(self, limit=10):
         with self.session_scope() as session:
-            return session.query(Complaint).limit(limit).all()
+            return session.query(Issue).limit(limit).all()
+
+    def get_issue(self, issue_id):
+        with self.session_scope() as session:
+            return session.query(Issue).get(issue_id)
+
+    def add_issue(self, issue):
+        with self.session_scope() as session:
+            session.add(issue)
 
     # Sessions management
     def get_sessions_by_user(self, user_id, limit=10, offset=0, active_only=False):

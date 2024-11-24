@@ -1,275 +1,245 @@
 class ChatManager {
     constructor() {
+        console.log('ChatManager: Constructor started');
+        
+        // Get CSRF token from meta tag
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        if (!csrfMeta) {
+            console.error('CSRF token meta tag not found');
+            return;
+        }
+        this.csrfToken = csrfMeta.content;
+        
         // Initialize DOM elements
         this.messageInput = document.getElementById('message-input');
-        this.sendButton = document.getElementById('send-button');        this.chatMessages = document.getElementById('chat-messages');
+        this.sendButton = document.getElementById('send-button');
+        this.chatMessages = document.getElementById('chat-messages');
         this.typingIndicator = document.getElementById('typing-indicator');
-        this.chatContainer = document.getElementById('chat-container');
-        this.sessionsList = document.getElementById('sessions-list');
-
-        // Track current session
-        this.currentSessionId = null;
-
+        
+        // Get current session ID
+        this.currentSessionId = document.getElementById('current-session-id')?.value || null;
+        
+        // Initialize
         this.bindEvents();
-        this.loadInitialHistory();
-        this.fetchSessionsList();
-        this.bindDeleteButtons();
+        this.bindSessionEvents();
+        this.loadInitialMessages();
+        
+        // Add welcome message if no initial messages
+        if (!window.initialMessages || !window.initialMessages.length) {
+            this.addMessageToChat(
+                "Hello! I'm Sina, your natural remedies assistant. I'm here to help you discover the healing power of herbs and natural medicines. What would you like to know about?",
+                'assistant'
+            );
+        }
     }
 
     bindEvents() {
-        if (this.sendButton && this.messageInput) {
-            this.sendButton.addEventListener('click', () => this.handleSendMessage());
-
-            this.messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !this.messageInput.disabled) {
+        console.log('ChatManager: Binding events');
+        if (this.sendButton) {
+            this.sendButton.onclick = () => {
+                console.log('ChatManager: Send button clicked');
+                this.handleSendMessage();
+            };
+        }
+        
+        if (this.messageInput) {
+            this.messageInput.onkeypress = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    console.log('ChatManager: Enter pressed');
                     e.preventDefault();
                     this.handleSendMessage();
                 }
-            });
-
-            this.messageInput.focus();
+            };
         }
-
-        if (this.sessionsList) {
-            this.sessionsList.addEventListener('click', (e) => {
-                const target = e.target;
-
-                if (target.classList.contains('btn-reopen')) {
-                    const sessionId = target.getAttribute('data-session-id');
-                    if (sessionId) {
-                        this.reopenSession(sessionId);
-                    }
-                }
-
-                if (target.classList.contains('btn-delete')) {
-                    const sessionId = target.getAttribute('data-session-id');
-                    if (sessionId) {
-                        this.deleteSession(sessionId);
-                    }
-                }
-            });
-        }
-    }
-
-    loadInitialHistory() {
-        const existingMessages = this.chatMessages.querySelectorAll('.message');
-        if (existingMessages.length > 0) {
-            const urlParams = new URLSearchParams(window.location.search);
-            this.currentSessionId = urlParams.get('session_id');
-        }
-    }
-
-    updateSessionsList(sessions) {
-        if (!this.sessionsList) return;
-
-        this.sessionsList.innerHTML = '';
-
-        sessions.forEach(session => {
-            const sessionDiv = document.createElement('div');
-            sessionDiv.className = 'session-item';
-
-            if (session.session_id === this.currentSessionId) {
-                sessionDiv.classList.add('active');
-            }
-
-            sessionDiv.innerHTML = `
-                <div class="session-info">
-                    <h3>${session.title}</h3>
-                    <p>${session.timestamp}</p>
-                </div>
-                <div class="session-actions">
-                    <button class="btn-reopen" data-session-id="${session.session_id}">
-                        Open
-                    </button>
-                    <button class="btn-delete" data-session-id="${session.session_id}">
-                        Delete
-                    </button>
-                </div>
-            `;
-            this.sessionsList.appendChild(sessionDiv);
-        });
     }
 
     async handleSendMessage() {
-        console.log(this.sendButton);  // Ensure it's not null
-        console.log("Send button clicked");  // Log to confirm the function is triggered
+        console.log('ChatManager: handleSendMessage called');
         const message = this.messageInput.value.trim();
-        if (!message) return;
-        console.log("Message: ", message);  // Log message content
+        if (!message) {
+            console.log('ChatManager: Empty message, returning');
+            return;
+        }
 
         try {
-            this.setLoadingState(true);
-            this.addMessage(message, true);
+            console.log('ChatManager: Processing message:', message);
+            
+            // Show typing indicator
+            if (this.typingIndicator) {
+                this.typingIndicator.style.display = 'flex';
+            }
+
+            // Add user message to chat
+            this.addMessageToChat(message, 'user');
+
+            // Clear input
             this.messageInput.value = '';
 
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message,
-                    session_id: this.currentSessionId || null
-                })
-            });
+            // Use the current session ID when sending messages
+            const response = await this.sendMessage(message, this.currentSessionId);
+            console.log('ChatManager: Server response:', response);
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to send message');
+            // Hide typing indicator
+            if (this.typingIndicator) {
+                this.typingIndicator.style.display = 'none';
             }
 
-            this.addMessage(data.response, false);
-
-            if (data.session_id && !this.currentSessionId) {
-                this.currentSessionId = data.session_id;
-                const newUrl = new URL(window.location);
-                newUrl.searchParams.set('session_id', data.session_id);
-                window.history.pushState({}, '', newUrl);
-
-                await this.fetchSessionsList();
+            // Add AI response to chat
+            if (response && response.response) {
+                this.addMessageToChat(response.response, 'assistant');
             }
 
         } catch (error) {
-            console.error('Error sending message:', error);
-            this.addMessage('Sorry, there was an error processing your request.', false);
-        } finally {
-            this.setLoadingState(false);
+            console.error('ChatManager: Error in handleSendMessage:', error);
+            alert('Failed to send message. Please try again.');
         }
     }
 
-    async fetchSessionsList() {
-        try {
-            const response = await fetch('/api/sessions');
-            const sessions = await response.json();
-            this.updateSessionsList(sessions);
-        } catch (error) {
-            console.error("Error loading sessions:", error);
-        }
-    }
-
-    async reopenSession(sessionId) {
-    try {
-        const response = await fetch(`/sessions/${current_user.id}/${sessionId}`, {
-            method: 'POST'
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            window.location.href = `/chat?session_id=${data.session_id}`;
-        } else {
-            throw new Error(data.error || 'Failed to reopen session');
-        }
-    } catch (error) {
-        console.error("Error reopening session:", error);
-        alert("Failed to reopen session. Please try again.");
-    }
-}
-
-bindDeleteButtons() {
-    // Use event delegation for delete buttons
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('btn-delete')) {
-            e.preventDefault();
-            const sessionId = e.target.getAttribute('data-session-id');
-            if (sessionId) {
-                this.deleteSession(sessionId);
-            }
-        }
-    });
-}
-
-async deleteSession(sessionId) {
-    if (!confirm('Are you sure you want to delete this session?')) return;
-
-    try {
-        const response = await fetch(`/api/sessions/${sessionId}/delete`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (response.ok) {
-            // Remove the session element from the DOM
-            const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`).closest('li');
-            if (sessionElement) {
-                sessionElement.remove();
-            }
-
-            // If we're currently viewing the deleted session, redirect to chat
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentSessionId = urlParams.get('session_id');
-            if (sessionId === currentSessionId) {
-                window.location.href = '/chat';
-            } else {
-                // Optional: Refresh the sessions list
-                await this.fetchSessionsList();
-            }
-        } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to delete session');
-        }
-    } catch (error) {
-        console.error('Error deleting session:', error);
-        alert('Failed to delete session. Please try again.');
-    }
-}
-
-addMessage(content, isUser) {
+    addMessageToChat(content, role) {
+        console.log('ChatManager: Adding message to chat:', { role });
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-
-        if (Array.isArray(content)) {
-            content.forEach(segment => {
-                const segmentDiv = document.createElement('div');
-
-                if (segment.type === 'text') {
-                    segmentDiv.textContent = segment.content;
-                } else if (segment.type === 'heading') {
-                    segmentDiv.innerHTML = `<strong>${segment.content}</strong>`;
-                } else if (segment.type === 'list') {
-                    const list = document.createElement('ul');
-                    segment.content.forEach(item => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = item;
-                        list.appendChild(listItem);
-                    });
-                    segmentDiv.appendChild(list);
-                }
-
-                contentDiv.appendChild(segmentDiv);
-            });
+        messageDiv.className = `message ${role}-message`;
+        
+        // Add herb icon for assistant messages
+        if (role === 'assistant') {
+            messageDiv.innerHTML = `
+                <div class="message-icon">🌿</div>
+                <div class="message-content">${content}</div>
+            `;
         } else {
-            contentDiv.textContent = content;
+            messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
         }
-
-        messageDiv.appendChild(contentDiv);
+        
         this.chatMessages.appendChild(messageDiv);
         this.scrollToBottom();
     }
 
     scrollToBottom() {
-        this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        if (this.chatMessages) {
+            this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+        }
     }
 
-    setLoadingState(isLoading) {
-        if (this.messageInput && this.sendButton && this.typingIndicator) {
-            this.messageInput.disabled = isLoading;
-            this.sendButton.disabled = isLoading;
-            this.typingIndicator.style.display = isLoading ? 'flex' : 'none';
-            if (!isLoading) {
-                this.messageInput.focus();
+    async sendMessage(message, sessionId = null) {
+        console.log('ChatManager: Sending message to server:', { message, sessionId });
+        
+        if (!this.csrfToken) {
+            console.error('CSRF token not found');
+            throw new Error('CSRF token missing');
+        }
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': this.csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'include',  // Important for CSRF
+                body: JSON.stringify({ 
+                    message,
+                    session_id: sessionId 
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Server returned ${response.status}`);
             }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error sending message:', error);
+            throw error;
+        }
+    }
+
+    // Add method to format herbal recommendations
+    formatHerbalRecommendation(content) {
+        // Add special formatting for herb names and dosages
+        return content.replace(/\b(tea|tincture|extract|capsule|powder)\b/gi, '<span class="dosage-form">$1</span>')
+                     .replace(/\b(\d+(?:-\d+)?\s*(?:mg|ml|g|oz|cups?))\b/gi, '<span class="dosage">$1</span>');
+    }
+
+    bindSessionEvents() {
+        // Reopen button handlers
+        document.querySelectorAll('.reopen-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sessionId = button.dataset.sessionId;
+                window.location.href = `/chat/${sessionId}`;
+            });
+        });
+
+        // Delete button handlers
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const sessionId = button.dataset.sessionId;
+                
+                if (!confirm('Are you sure you want to delete this chat session?')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/session/delete/${sessionId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': this.csrfToken,
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+
+                    if (response.ok) {
+                        const sessionElement = document.querySelector(`[data-session-id="${sessionId}"]`);
+                        if (sessionElement) {
+                            sessionElement.remove();
+                        }
+                        
+                        // If we're in the deleted session, redirect to /chat
+                        if (this.currentSessionId === sessionId) {
+                            window.location.href = '/chat';
+                        }
+                    } else {
+                        alert('Failed to delete session. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting session:', error);
+                    alert('Failed to delete session. Please try again.');
+                }
+            });
+        });
+    }
+
+    loadInitialMessages() {
+        try {
+            if (window.initialMessages && Array.isArray(window.initialMessages)) {
+                window.initialMessages.forEach(msg => {
+                    this.addMessageToChat(msg.content, msg.role);
+                });
+            }
+        } catch (e) {
+            console.error('Error loading initial messages:', e);
         }
     }
 }
 
-    // Initialize chat manager when DOM is loaded
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const chatManager = new ChatManager();
-    window.chatManager = chatManager;  // Make it globally accessible
+    console.log('DOM loaded, initializing ChatManager');
+    window.chatManager = new ChatManager();
 });
+
+// Add a global error handler
+window.onerror = function(msg, url, line, col, error) {
+    console.error('Global error:', {
+        message: msg,
+        url: url,
+        line: line,
+        column: col,
+        error: error
+    });
+    return false;
+};

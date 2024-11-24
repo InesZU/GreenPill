@@ -1,16 +1,161 @@
-/* General styling */
+/* Nature-themed variables */
+:root {
+    --color-leaf: #84a102;
+    --color-moss: #48bb78;
+    --color-sage: #38a169;
+    --color-forest: #2f855a;
+    --color-earth: #795548;
+    --color-cream: #fff8e1;
+    --color-sky: #ebf8ff;
+}
+
+/* General styling with nature theme */
 .chat-container {
-    background: white;
+    background: var(--color-cream);
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    height: 500px;
+    height: 600px;
     display: flex;
     flex-direction: column;
     margin-top: 20px;
-    border: 5px solid #84a102;
+    border: 5px solid var(--color-leaf);
     max-width: 100%;
     justify-content: flex-end;
     padding: 10px;
+    background-image: url('../images/herbs-bg.png');
+    background-size: cover;
+    background-blend-mode: overlay;
+}
+
+/* Message styling */
+.message {
+    padding: 12px 18px;
+    border-radius: 15px;
+    font-size: 15px;
+    line-height: 1.4;
+    max-width: 75%;
+    word-wrap: break-word;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    animation: growIn 0.3s ease-out;
+    margin: 10px 0;
+}
+
+.assistant-message {
+    background: rgba(255, 255, 255, 0.9);
+    border-left: 3px solid var(--color-moss);
+    align-self: flex-start;
+    margin-right: 2rem;
+}
+
+.user-message {
+    background: var(--color-sky);
+    border-right: 3px solid var(--color-leaf);
+    align-self: flex-end;
+    margin-left: 2rem;
+}
+
+/* Typing indicator styled as growing leaves */
+.typing-indicator {
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    margin-left: 1rem;
+}
+
+.leaf {
+    width: 12px;
+    height: 12px;
+    background: var(--color-moss);
+    border-radius: 0 50% 50% 50%;
+    transform: rotate(45deg);
+    animation: growLeaf 1s infinite;
+}
+
+/* Input area styling */
+.input-container {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 15px;
+    border-top: 2px solid var(--color-leaf);
+    border-radius: 0 0 15px 15px;
+}
+
+#message-input {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid var(--color-moss);
+    border-radius: 25px;
+    font-size: 1rem;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+#message-input:focus {
+    outline: none;
+    border-color: var(--color-leaf);
+    box-shadow: 0 0 0 3px rgba(132, 161, 2, 0.2);
+}
+
+#send-button {
+    padding: 12px 24px;
+    background: var(--color-moss);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#send-button:hover {
+    background: var(--color-sage);
+    transform: translateY(-1px);
+}
+
+#send-button:active {
+    transform: translateY(1px);
+}
+
+/* Animations */
+@keyframes growLeaf {
+    0%, 100% { transform: rotate(45deg) scale(0.8); opacity: 0.5; }
+    50% { transform: rotate(45deg) scale(1.2); opacity: 1; }
+}
+
+@keyframes growIn {
+    from { 
+        opacity: 0; 
+        transform: scale(0.9) translateY(10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}
+
+/* Chat history styling */
+.chat-history {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 30px;
+    border: 2px solid var(--color-moss);
+}
+
+.session-item {
+    background: rgba(255, 255, 255, 0.9);
+    border-left: 7px solid var(--color-leaf);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.session-item:hover {
+    background: var(--color-cream);
+    transform: translateX(5px);
 }
 
 /* Message container */
@@ -179,4 +324,121 @@ button {
 
 button:hover {
     background-color: #2f855a;
+}
+
+/* Add these new styles to your existing chat.css */
+
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-messages-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.auth-prompt {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.auth-prompt a {
+    color: #48bb78;
+    text-decoration: underline;
+}
+
+.chat-sidebar {
+    width: 250px;
+    background: #f9fafb;
+    border-right: 1px solid #e5e7eb;
+    padding: 1rem;
+}
+
+.session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.session-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: white;
+    transition: all 0.2s;
+}
+
+.session-item:hover {
+    background: #f3f4f6;
+}
+
+.session-item.active {
+    background: #e5e7eb;
+}
+
+.session-date {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.chat-input form {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: white;
+    border-top: 1px solid #e5e7eb;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+}
+
+.chat-input button {
+    padding: 0.75rem 1.5rem;
+    background: #48bb78;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-input button:hover {
+    background: #38a169;
+}
+
+.session-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.session-item:hover {
+    transform: translateY(-1px);
+}
+
+
+
+.session-actions {
+    opacity: 0.8;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.session-item:hover .session-actions {
+    opacity: 1;
 }

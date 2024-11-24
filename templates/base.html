@@ -19,6 +19,8 @@
       <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-datepicker.min.css') }}">
       <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+      <meta name="csrf-token" content="{{ csrf_token() }}">
    </head>
    <body class="main-layout">
       <!-- loader  -->
@@ -41,11 +43,14 @@
                         <nav class="site-navbar">
                            <ul>
                               <li><a class="active" href="{{ url_for('home') }}">Home</a></li>
-                              <li><a href="{{ url_for('issues') }}">Issues List</a></li>
-                              <li><a href="{{ url_for('remedies') }}">Herbs List</a></li>
+                           {% if current_user.is_authenticated %}
+                              <li><a href="{{ url_for('issues') }}">Health Issues</a></li>
+                              <li><a href="{{ url_for('remedies') }}">Remedies</a></li>
                               <li><a href="{{ url_for('chat') }}">AI Sina</a></li>
+                           {% else %}
                               <li class="d_none"><a href="{{ url_for('login') }}"><i class="fa fa-user" aria-hidden="true"></i></a></li>
                               <li class="d_none"><a href="{{ url_for('register') }}"><i class="fa fa-sign-in" aria-hidden="true"></i></a></li>
+                           {% endif %}
                            </ul>
                            <button class="nav-toggler">
                               <span></span>
@@ -61,7 +66,7 @@
          <!-- Page-specific content goes here -->
          {% endblock %}
       </div>
-      <!-- Footer -->
+     <!-- Footer -->
       <footer>
          <div class="footer">
             <div class="container">
